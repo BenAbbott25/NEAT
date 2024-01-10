@@ -1,0 +1,20 @@
+{
+    "pop_size": 100,
+    "fitness_criterion": "max",
+    "fitness_threshold": 1000.0,
+    "reset_on_extinction": true,
+    "activation_default": "sigmoid",
+    "activation_mutate_rate": 0.1,
+    "activation_options": "sigmoid",
+    "aggregation_default": "sum",
+    "crossover_rate": 0.7,
+    "mutation_rate": 0.2,
+    "max_stagnation": 15,
+    "species_fitness_func": "max",
+    "elitism": 2,
+    "survival_threshold": 0.2,
+    "min_species_size": 2,
+    "max_species_size": 10,
+    "compatibility_threshold": 3.0,
+    "fitness_func": "your_custom_fitness_function"
+}
