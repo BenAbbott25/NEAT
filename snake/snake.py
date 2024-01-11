@@ -2,7 +2,7 @@ import pygame, sys, time, random
 import numpy as np
 
 class Game:
-    def __init__(self, blocks_x, blocks_y, pixels_per_block=10, title = 'Snake Eater'):
+    def __init__(self, blocks_x, blocks_y, pixels_per_block=10, max_cycles_without_food = 500 ,title = 'Snake Eater'):
         """
         Snake Eater
         Made with PyGame
@@ -13,9 +13,11 @@ class Game:
         # Medium    ->  25
         # Hard      ->  40
         # Harder    ->  60
-        # Impossible->  120
+        # Impossible->  120 
         # difficulty = 25
         self.difficulty = 0
+
+        self.title = title
 
         # Window size
         self.frame_size_x = blocks_x * pixels_per_block
@@ -24,6 +26,7 @@ class Game:
 
         self.is_game_over = False
         self.cycles_since_last_food = 0
+        self.max_cycles_since_last_food = max_cycles_without_food
 
         # Checks for errors encountered
         check_errors = pygame.init()
@@ -37,7 +40,7 @@ class Game:
 
 
         # Initialise game window
-        pygame.display.set_caption('Snake Eater')
+        pygame.display.set_caption(self.title)
         self.game_window = pygame.display.set_mode((self.frame_size_x, self.frame_size_y))
 
 
@@ -70,99 +73,118 @@ class Game:
         return self.snake_pos, self.snake_body, self.food_pos, self.direction, self.score, self.cycles
     
     def snake_vision(self):
-        snake_vision = [0, 0, 0, 0, 0, 0, 0, 0]  # Initialize vision in all eight directions: up, down, left, right, up-right, up-left, down-right, down-left
+        snake_vision = [0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1]  # Initialize vision in all eight directions: up, down, left, right, up-right, up-left, down-right, down-left
         count = 1
 
         # Check upwards
-        for i in range(self.snake_pos[1]-self.pixel_size, -self.pixel_size, -self.pixel_size):
-            if [self.snake_pos[0], i] == self.food_pos:
-                snake_vision[0] = 10/count
-                break
+        for i in range(self.snake_pos[1]-self.pixel_size, -self.pixel_size-1, -self.pixel_size):
             if [self.snake_pos[0], i] in self.snake_body or i < 0:
                 snake_vision[0] = -10/count
+                break
+            if [self.snake_pos[0], i] == self.food_pos:
+                snake_vision[0] = 10/count
                 break
             count += 1
         count = 1
         
         # Check downwards
-        for i in range(self.snake_pos[1]+self.pixel_size, self.frame_size_y, self.pixel_size):
-            if [self.snake_pos[0], i] == self.food_pos:
-                snake_vision[1] = 10/count
-                break
+        for i in range(self.snake_pos[1]+self.pixel_size, self.frame_size_y+1, self.pixel_size):
             if [self.snake_pos[0], i] in self.snake_body or i > self.frame_size_y - self.pixel_size:
                 snake_vision[1] = -10/count
+                break
+            if [self.snake_pos[0], i] == self.food_pos:
+                snake_vision[1] = 10/count
                 break
             count += 1
         count = 1
         
         # Check right
-        for i in range(self.snake_pos[0]+self.pixel_size, self.frame_size_x, self.pixel_size):
-            if [i, self.snake_pos[1]] == self.food_pos:
-                snake_vision[3] = 10/count
-                break
+        for i in range(self.snake_pos[0]+self.pixel_size, self.frame_size_x+1, self.pixel_size):
             if [i, self.snake_pos[1]] in self.snake_body or i > self.frame_size_x - self.pixel_size:
                 snake_vision[3] = -10/count
+                break
+            if [i, self.snake_pos[1]] == self.food_pos:
+                snake_vision[3] = 10/count
                 break
             count += 1
         count = 1
 
         # Check left
-        for i in range(self.snake_pos[0]-self.pixel_size, -self.pixel_size, -self.pixel_size):
-            if [i, self.snake_pos[1]] == self.food_pos:
-                snake_vision[2] = 10/count
-                break
+        for i in range(self.snake_pos[0]-self.pixel_size, -self.pixel_size-1, -self.pixel_size):
             if [i, self.snake_pos[1]] in self.snake_body or i < 0:
                 snake_vision[2] = -10/count
+                break
+            if [i, self.snake_pos[1]] == self.food_pos:
+                snake_vision[2] = 10/count
                 break
             count += 1
         count = 1
 
         # Check up-right
-        for i, j in zip(range(self.snake_pos[0]+self.pixel_size, self.frame_size_x, self.pixel_size), range(self.snake_pos[1]-self.pixel_size, -self.pixel_size, -self.pixel_size)):
-            if [i, j] == self.food_pos:
-                snake_vision[4] = 10/count
-                break
+        for i, j in zip(range(self.snake_pos[0]+self.pixel_size, self.frame_size_x+1, self.pixel_size), range(self.snake_pos[1]-self.pixel_size, -self.pixel_size-1, -self.pixel_size)):
             if [i, j] in self.snake_body or i > self.frame_size_x - self.pixel_size or j < 0:
                 snake_vision[4] = -10/count
+                break
+            if [i, j] == self.food_pos:
+                snake_vision[4] = 10/count
                 break
             count += 1
         count = 1
 
         # Check up-left
-        for i, j in zip(range(self.snake_pos[0]-self.pixel_size, -self.pixel_size, -self.pixel_size), range(self.snake_pos[1]-self.pixel_size, -self.pixel_size, -self.pixel_size)):
-            if [i, j] == self.food_pos:
-                snake_vision[5] = 10/count
-                break
+        for i, j in zip(range(self.snake_pos[0]-self.pixel_size, -self.pixel_size-1, -self.pixel_size), range(self.snake_pos[1]-self.pixel_size, -self.pixel_size-1, -self.pixel_size)):
             if [i, j] in self.snake_body or i < 0 or j < 0:
                 snake_vision[5] = -10/count
+                break
+            if [i, j] == self.food_pos:
+                snake_vision[5] = 10/count
                 break
             count += 1
         count = 1
 
         # Check down-right
-        for i, j in zip(range(self.snake_pos[0]+self.pixel_size, self.frame_size_x, self.pixel_size), range(self.snake_pos[1]+self.pixel_size, self.frame_size_y, self.pixel_size)):
-            if [i, j] == self.food_pos:
-                snake_vision[6] = 10/count
-                break
+        for i, j in zip(range(self.snake_pos[0]+self.pixel_size, self.frame_size_x+1, self.pixel_size), range(self.snake_pos[1]+self.pixel_size, self.frame_size_y-1, self.pixel_size)):
             if [i, j] in self.snake_body or i > self.frame_size_x - self.pixel_size or j > self.frame_size_y - self.pixel_size:
                 snake_vision[6] = -10/count
+                break
+            if [i, j] == self.food_pos:
+                snake_vision[6] = 10/count
                 break
             count += 1
         count = 1
 
         # Check down-left
-        for i, j in zip(range(self.snake_pos[0]-self.pixel_size, -self.pixel_size, -self.pixel_size), range(self.snake_pos[1]+self.pixel_size, self.frame_size_y, self.pixel_size)):
-            if [i, j] == self.food_pos:
-                snake_vision[7] = 10/count
-                break
+        for i, j in zip(range(self.snake_pos[0]-self.pixel_size, -self.pixel_size-1, -self.pixel_size), range(self.snake_pos[1]+self.pixel_size, self.frame_size_y+1, self.pixel_size)):
             if [i, j] in self.snake_body or i < 0 or j > self.frame_size_y - self.pixel_size:
                 snake_vision[7] = -10/count
                 break
+            if [i, j] == self.food_pos:
+                snake_vision[7] = 10/count
+                break
             count += 1
         count = 1
-    
+
+        # current direction
+        if self.direction == 'UP':
+            snake_vision[8] = 1
+        elif self.direction == 'DOWN':
+            snake_vision[9] = 1
+        elif self.direction == 'LEFT':
+            snake_vision[10] = 1
+        elif self.direction == 'RIGHT':
+            snake_vision[11] = 1
+
+        # print(snake_vision)
         return snake_vision
 
+    def calculate_fitness(self):
+        fitness = 10*self.score + self.cycles/1000 
+        # - self.cycles_since_last_food/1000
+
+        # if self.score == 0:
+        #     fitness -= 10
+
+        return fitness
 
     def perform_action(self, action):
         self.change_to = action
@@ -255,14 +277,6 @@ class Game:
             cycles_rect.midtop = (2*self.frame_size_x/3, self.frame_size_y/1.25)
         self.game_window.blit(cycles_surface, cycles_rect)
         # pygame.display.flip()
-
-    def calculate_fitness(self):
-        fitness = 10*self.score + self.cycles/1000 - self.cycles_since_last_food/1000
-
-        if self.score == 0:
-            fitness -= 10
-
-        return fitness
     
     def draw(self):
         # GFX
@@ -272,6 +286,10 @@ class Game:
             # .draw.rect(play_surface, color, xy-coordinate)
             # xy-coordinate -> .Rect(x, y, size_x, size_y)
             pygame.draw.rect(self.game_window, self.green, pygame.Rect(pos[0], pos[1], self.pixel_size, self.pixel_size))
+
+        # bar showing remaining cycles
+        pygame.draw.rect(self.game_window, self.white, pygame.Rect(0, 0, (self.max_cycles_since_last_food - self.cycles_since_last_food) * self.frame_size_x/self.max_cycles_since_last_food, 10))
+
 
         # Snake food
         pygame.draw.rect(self.game_window, self.white, pygame.Rect(self.food_pos[0], self.food_pos[1], self.pixel_size, self.pixel_size))
