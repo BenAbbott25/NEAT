@@ -1,5 +1,5 @@
 import neat
-from snake import SnakeGame  # Import your game class
+from snake.snake import SnakeGame  # Import your game class
 import time
 
 # Load configuration.
