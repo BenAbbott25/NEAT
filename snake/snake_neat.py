@@ -15,28 +15,22 @@ ending_generation = 2000
 save_every = 100
 
 def eval_genomes(genomes, config):
+    show_game = False
     # routes = [0,[]]
+    max_fitness = max((genome.fitness for _, genome in genomes if genome.fitness is not None), default=0)
+
     for genome_id, genome in tqdm.tqdm(genomes):
+        if genome.fitness is not None and genome.fitness >= max_fitness * 0.75:
+            show_game = True
         # route = []
-        # print('Genome ID: {0}'.format(genome_id))
         net = neat.nn.FeedForwardNetwork.create(genome, config)
-        game = Game(72, 48, 10, 250, "genomeID: {0}".format(genome_id))  # Initialize a new game for each genome
+        game = Game(72, 48, 10, 250, "genomeID: {0}".format(genome_id),show_game)  # Initialize a new game for each genome
         while game.is_game_over == False and game.cycles_since_last_food < max_cycles_without_food:
             sensors = game.snake_vision()
             inputs = net.activate(sensors)
-            # max_index = inputs.index(max(inputs))
-            # route.append(max_index)
-            print("Genome's species: ", genome.species)
-            print("Genome's fitness: ", genome.fitness)
-            best_genome = max(genomes, key=lambda x: x[1].fitness)
-            print("Species of fittest genome: ", best_genome[1].species)
             game.run(inputs)
             genome.fitness = game.calculate_fitness()
-    #     routefitness = game.calculate_fitness()
-    #     if routefitness > routes[0]:
-    #         routes[0] = routefitness
-    #         routes[1] = route
-    # print("Best route: ", routes[1])
+
 
 def run_neat(config_file):
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,

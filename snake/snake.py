@@ -2,7 +2,7 @@ import pygame, sys, time, random
 import numpy as np
 
 class Game:
-    def __init__(self, blocks_x, blocks_y, pixels_per_block=10, max_cycles_without_food = 500 ,title = 'Snake Eater'):
+    def __init__(self, blocks_x, blocks_y, pixels_per_block=10, max_cycles_without_food = 500 ,title = 'Snake Eater', show_game = False):
         """
         Snake Eater
         Made with PyGame
@@ -18,6 +18,7 @@ class Game:
         self.difficulty = 0
 
         self.title = title
+        self.show_game = show_game
 
         # Window size
         self.frame_size_x = blocks_x * pixels_per_block
@@ -242,15 +243,16 @@ class Game:
     # Game Over
     def game_over(self):
         self.is_game_over = True
-        my_font = pygame.font.SysFont('times new roman', 90)
-        game_over_surface = my_font.render('YOU DIED', True, self.red)
-        game_over_rect = game_over_surface.get_rect()
-        game_over_rect.midtop = (self.frame_size_x/2, self.frame_size_y/4)
-        self.game_window.fill(self.black)
-        self.game_window.blit(game_over_surface, game_over_rect)
-        self.show_score(0, self.red, 'times', 20)
-        self.show_cycles(0, self.red, 'times', 20)
-        pygame.display.flip()
+        if self.show_game:
+            my_font = pygame.font.SysFont('times new roman', 90)
+            game_over_surface = my_font.render('YOU DIED', True, self.red)
+            game_over_rect = game_over_surface.get_rect()
+            game_over_rect.midtop = (self.frame_size_x/2, self.frame_size_y/4)
+            self.game_window.fill(self.black)
+            self.game_window.blit(game_over_surface, game_over_rect)
+            self.show_score(0, self.red, 'times', 20)
+            self.show_cycles(0, self.red, 'times', 20)
+            pygame.display.flip()
         # time.sleep(3)
 
 
@@ -288,7 +290,7 @@ class Game:
             pygame.draw.rect(self.game_window, self.green, pygame.Rect(pos[0], pos[1], self.pixel_size, self.pixel_size))
 
         # bar showing remaining cycles
-        pygame.draw.rect(self.game_window, self.white, pygame.Rect(0, 0, (self.max_cycles_since_last_food - self.cycles_since_last_food) * self.frame_size_x/self.max_cycles_since_last_food, 10))
+        pygame.draw.rect(self.game_window, self.white, pygame.Rect(0, 0, (self.max_cycles_since_last_food - self.cycles_since_last_food) * self.frame_size_x/self.max_cycles_since_last_food, self.pixel_size/2))
 
 
         # Snake food
@@ -309,7 +311,8 @@ class Game:
 
     def run(self, inputs, lag=0):
         self.handle_inputs(inputs)
-        self.draw()
+        if self.show_game:
+            self.draw()
         self.cycles += 1
         self.cycles_since_last_food += 1
         time.sleep(lag)
