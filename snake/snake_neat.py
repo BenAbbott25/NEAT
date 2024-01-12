@@ -10,7 +10,7 @@ frame_size_x = 720
 frame_size_y = 480
 max_cycles_without_food = 250
 
-starting_generation = 300
+starting_generation = 600
 ending_generation = 2000
 save_every = 100
 
@@ -20,8 +20,9 @@ def eval_genomes(genomes, config):
     max_fitness = max((genome.fitness for _, genome in genomes if genome.fitness is not None), default=0)
 
     for genome_id, genome in tqdm.tqdm(genomes):
-        if genome.fitness is not None and genome.fitness >= max_fitness * 0.75:
-            show_game = True
+        # if genome.fitness is not None and genome.fitness >= max_fitness * 0.75:
+        #     show_game = True
+        show_game = True
         # route = []
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         game = Game(72, 48, 10, 250, "genomeID: {0}".format(genome_id),show_game)  # Initialize a new game for each genome
@@ -51,9 +52,9 @@ def run_neat(config_file):
         winner = p.run(eval_genomes, save_every)
         # Save the winner and the population state.
         print(f"Saving winner and population of generation {i}...")
-        with open(f"saves/winner_gen_{i}.pkl", "wb") as f:
+        with open(f"saves/winner_gen_{i+save_every}.pkl", "wb") as f:
             pickle.dump(winner, f)
-        with open(f"saves/population_gen_{i}.pkl", "wb") as f:
+        with open(f"saves/population_gen_{i+save_every}.pkl", "wb") as f:
             pickle.dump(p, f)
 
     print("Winner's genome saved to winner.pkl")
