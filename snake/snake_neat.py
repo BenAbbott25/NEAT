@@ -10,9 +10,13 @@ frame_size_x = 720
 frame_size_y = 480
 max_cycles_without_food = 250
 
-starting_generation = 600
-ending_generation = 2000
-save_every = 100
+blocks_x = 20
+blocks_y = 20
+block_size = 15
+
+# starting_generation = 100
+# ending_generation = 2000
+# save_every = 100
 
 def eval_genomes(genomes, config):
     show_game = False
@@ -25,7 +29,7 @@ def eval_genomes(genomes, config):
         show_game = True
         # route = []
         net = neat.nn.FeedForwardNetwork.create(genome, config)
-        game = Game(72, 48, 10, 250, "genomeID: {0}".format(genome_id),show_game)  # Initialize a new game for each genome
+        game = Game(blocks_x, blocks_y, block_size, 250, "genomeID: {0}".format(genome_id),show_game)  # Initialize a new game for each genome
         while game.is_game_over == False and game.cycles_since_last_food < max_cycles_without_food:
             sensors = game.snake_vision()
             inputs = net.activate(sensors)
@@ -33,7 +37,7 @@ def eval_genomes(genomes, config):
             genome.fitness = game.calculate_fitness()
 
 
-def run_neat(config_file):
+def run_neat(config_file, starting_generation=0, ending_generation=2000, save_every=100):
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                                 neat.DefaultSpeciesSet, neat.DefaultStagnation,
                                 config_file)
@@ -45,16 +49,17 @@ def run_neat(config_file):
 
     for i in range(starting_generation, ending_generation, save_every):
         # Load the saved population state if it exists
-        if os.path.isfile(f"saves/population_gen_{i}.pkl"):
-            with open(f"saves/population_gen_{i}.pkl", "rb") as f:
+        if os.path.isfile(f"saves/population_size_{blocks_x}_{blocks_y}_gen_{i}.pkl"):
+            print(f"Loading file saves/population_size_{blocks_x}_{blocks_y}_gen_{i}.pkl...")
+            with open(f"saves/population_size_{blocks_x}_{blocks_y}_gen_{i}.pkl", "rb") as f:
                 p = pickle.load(f)
         print(f"Running generation {i}...")
         winner = p.run(eval_genomes, save_every)
         # Save the winner and the population state.
         print(f"Saving winner and population of generation {i}...")
-        with open(f"saves/winner_gen_{i+save_every}.pkl", "wb") as f:
+        with open(f"saves/winner_size_{blocks_x}_{blocks_y}_gen_{i+save_every}.pkl", "wb") as f:
             pickle.dump(winner, f)
-        with open(f"saves/population_gen_{i+save_every}.pkl", "wb") as f:
+        with open(f"saves/population_size_{blocks_x}_{blocks_y}_gen_{i+save_every}.pkl", "wb") as f:
             pickle.dump(p, f)
 
     print("Winner's genome saved to winner.pkl")
@@ -62,4 +67,8 @@ def run_neat(config_file):
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'neat-config.ini')
-    run_neat(config_path)
+    # run_neat(config_path, 0, 10, 1)
+    # run_neat(config_path, 10, 100, 10)
+    # run_neat(config_path, 100, 2000, 100)
+
+    run_neat(config_path, 300, 1000, 100)

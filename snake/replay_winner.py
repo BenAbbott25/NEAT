@@ -3,15 +3,20 @@ import neat
 import numpy as np
 import pickle
 from snake import Game
-n = 300
 
-def play_game_with_winner(winner_file):
+save_file = "saves/winner_size_20_20_gen_300.pkl"
+
+def play_game_with_winner(winner_file, generation=0):
+    blocks_x, blocks_y = map(int, winner_file.split("_")[2:4])
     # Load the saved winner
     with open(winner_file, "rb") as f:
         genome = pickle.load(f)
 
     # Create the game instance
-    game = Game(72, 48, 10, 250, f"Expected Score: {int(np.floor(genome.fitness/10))}",True)
+    title = f"Expected Score: {int(np.floor(genome.fitness/10))}"
+    if generation > 0:
+        title = f"Generation: {generation}, " + title
+    game = Game(blocks_x, blocks_y, 10, 250, title, True)
     # game = Game(20, 20, 25, 250, f"Expected Score: {int(np.floor(genome.fitness/10))}",True)
 
     # Create the network
@@ -33,4 +38,5 @@ def play_game_with_winner(winner_file):
         game.run(inputs)
 
 if __name__ == "__main__":
-    play_game_with_winner(f"saves/winner_gen_{n}.pkl")
+    # play_game_with_winner(f"saves/winner_gen_{n}.pkl")
+    play_game_with_winner(save_file)
