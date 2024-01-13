@@ -2,11 +2,16 @@ import pygame, sys, time, random
 import numpy as np
 
 class Game:
-    def __init__(self, blocks_x, blocks_y, pixels_per_block=10, max_cycles_without_food = 500 ,title = 'Snake Eater', show_game = False, show_score_screen = False):
+    def __init__(self, blocks_x, blocks_y, pixels_per_block=10, max_cycles_without_food = 500 ,title = 'Snake Eater', show_game = False):
         """
         Snake Eater
         Made with PyGame
         """
+        food_spawn_list = []
+        for i in range(1, blocks_x):
+            for j in range(1, blocks_y):
+                food_spawn_list.append([i*pixels_per_block, j*pixels_per_block])
+        random.shuffle(food_spawn_list)
 
         # Difficulty settings
         # Easy      ->  10
@@ -19,7 +24,6 @@ class Game:
 
         self.title = title
         self.show_game = show_game
-        self.show_score_screen = show_score_screen
 
         # Window size
         self.frame_size_x = blocks_x * pixels_per_block
@@ -261,7 +265,6 @@ class Game:
 
     # Score
     def show_score(self, choice, color, font, size):
-        time.sleep(0.5)
         score_font = pygame.font.SysFont(font, size)
         score_surface = score_font.render('Score : ' + str(self.score), True, color)
         score_rect = score_surface.get_rect()
@@ -270,23 +273,19 @@ class Game:
         else:
             score_rect.midtop = (self.frame_size_x/3, self.frame_size_y/1.25)
         self.game_window.blit(score_surface, score_rect)
-        if self.show_score_screen:
-            pygame.display.flip()
-            time.sleep(0.5)
+        # pygame.display.flip()
 
     #  Cycles
     def show_cycles(self, choice, color, font, size):
         cycles_font = pygame.font.SysFont(font, size)
-        cycles_surface = cycles_font.render('Moves : ' + str(self.cycles), True, color)
+        cycles_surface = cycles_font.render('Cycles : ' + str(self.cycles), True, color)
         cycles_rect = cycles_surface.get_rect()
         if choice == 1:
             cycles_rect.midtop = (self.frame_size_x/3, 15)
         else:
             cycles_rect.midtop = (2*self.frame_size_x/3, self.frame_size_y/1.25)
         self.game_window.blit(cycles_surface, cycles_rect)
-        if self.show_score_screen:
-            pygame.display.flip()
-            time.sleep(1.5)
+        # pygame.display.flip()
     
     def draw(self):
         # GFX

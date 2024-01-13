@@ -4,19 +4,22 @@ import numpy as np
 import pickle
 from snake import Game
 
-save_file = "saves/winner_size_20_20_gen_300.pkl"
+save_file = "saves/x20y20/winner_size_20_20_gen_700.pkl"
+if save_file != "":
+    generation = int(save_file.split("_")[-1].split(".")[0])
 
-def play_game_with_winner(winner_file, generation=0):
+def play_game_with_winner(winner_file, generation=0, show_game=True, show_score=False):
     blocks_x, blocks_y = map(int, winner_file.split("_")[2:4])
     # Load the saved winner
     with open(winner_file, "rb") as f:
         genome = pickle.load(f)
 
     # Create the game instance
-    title = f"Expected Score: {int(np.floor(genome.fitness/10))}"
+    title = f"Best Score: {int(np.floor(genome.fitness/10))}"
     if generation > 0:
-        title = f"Generation: {generation}, " + title
-    game = Game(blocks_x, blocks_y, 10, 250, title, True)
+        title = f"Gen: {generation}, " + title
+    print(show_score)
+    game = Game(blocks_x, blocks_y, 25, 250, title, show_game, show_score)
     # game = Game(20, 20, 25, 250, f"Expected Score: {int(np.floor(genome.fitness/10))}",True)
 
     # Create the network
@@ -39,4 +42,4 @@ def play_game_with_winner(winner_file, generation=0):
 
 if __name__ == "__main__":
     # play_game_with_winner(f"saves/winner_gen_{n}.pkl")
-    play_game_with_winner(save_file)
+    play_game_with_winner(save_file, generation, True, True)
