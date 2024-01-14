@@ -4,12 +4,13 @@ import numpy as np
 import pickle
 from snake import Game
 
-save_file = "saves/x20y20/winner_size_20_20_gen_700.pkl"
+save_file = "saves/x20y20/winner_size_20_20_gen_1000.pkl"
+# save_file = "saves/x10y10/winner_gen_500.pkl"
 if save_file != "":
     generation = int(save_file.split("_")[-1].split(".")[0])
 
-def play_game_with_winner(winner_file, generation=0, show_game=True, show_score=False):
-    blocks_x, blocks_y = map(int, winner_file.split("_")[2:4])
+def play_game_with_winner(winner_file, blocks_x, blocks_y, generation=0, show_game=True, show_score=False):
+    # blocks_x, blocks_y = map(int, winner_file.split("_")[2:4])
     # Load the saved winner
     with open(winner_file, "rb") as f:
         genome = pickle.load(f)
@@ -42,4 +43,4 @@ def play_game_with_winner(winner_file, generation=0, show_game=True, show_score=
 
 if __name__ == "__main__":
     # play_game_with_winner(f"saves/winner_gen_{n}.pkl")
-    play_game_with_winner(save_file, generation, True, True)
+    play_game_with_winner(save_file, 20, 20, generation, True, True)

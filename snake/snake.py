@@ -246,7 +246,7 @@ class Game:
     # Game Over
     def game_over(self):
         self.is_game_over = True
-        if self.show_game:
+        if self.show_score_screen:
             my_font = pygame.font.SysFont('times new roman', 90)
             game_over_surface = my_font.render('YOU DIED', True, self.red)
             game_over_rect = game_over_surface.get_rect()
