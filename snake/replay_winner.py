@@ -4,10 +4,14 @@ import numpy as np
 import pickle
 from snake import Game
 
-save_file = "saves/x20y20/winner_size_20_20_gen_1000.pkl"
-# save_file = "saves/x10y10/winner_gen_500.pkl"
+# save_file = "saves/x20y20/winner_size_20_20_gen_800.pkl"
+save_file = "saves/x10y10/winner_gen_1000.pkl"
 if save_file != "":
     generation = int(save_file.split("_")[-1].split(".")[0])
+    blocks = save_file.split("/")[1]
+    blocks_x = int(blocks.split("y")[0].split("x")[1])
+    blocks_y = int(blocks.split("y")[1])
+    print(blocks_x, blocks_y)
 
 def play_game_with_winner(winner_file, blocks_x, blocks_y, generation=0, show_game=True, show_score=False):
     # blocks_x, blocks_y = map(int, winner_file.split("_")[2:4])
@@ -43,4 +47,4 @@ def play_game_with_winner(winner_file, blocks_x, blocks_y, generation=0, show_ga
 
 if __name__ == "__main__":
     # play_game_with_winner(f"saves/winner_gen_{n}.pkl")
-    play_game_with_winner(save_file, 20, 20, generation, True, True)
+    play_game_with_winner(save_file, blocks_x, blocks_y, generation, True, True)

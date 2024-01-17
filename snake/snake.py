@@ -224,7 +224,8 @@ class Game:
 
         # Spawning food on the screen
         if not self.food_spawn:
-            self.food_pos = [random.randrange(1, (self.frame_size_x//self.pixel_size)) * self.pixel_size, random.randrange(1, (self.frame_size_y//self.pixel_size)) * self.pixel_size]
+            while self.food_pos in self.snake_body:
+                self.food_pos = [random.randrange(1, (self.frame_size_x//self.pixel_size)) * self.pixel_size, random.randrange(1, (self.frame_size_y//self.pixel_size)) * self.pixel_size]
         self.food_spawn = True
 
         # Game Over conditions
@@ -297,12 +298,17 @@ class Game:
             # xy-coordinate -> .Rect(x, y, size_x, size_y)
             pygame.draw.rect(self.game_window, self.green, pygame.Rect(pos[0], pos[1], self.pixel_size, self.pixel_size))
 
-        # bar showing remaining cycles
-        pygame.draw.rect(self.game_window, self.white, pygame.Rect(0, 0, (self.max_cycles_since_last_food - self.cycles_since_last_food) * self.frame_size_x/self.max_cycles_since_last_food, self.pixel_size/2))
-
-
         # Snake food
         pygame.draw.rect(self.game_window, self.white, pygame.Rect(self.food_pos[0], self.food_pos[1], self.pixel_size, self.pixel_size))
+
+        # Draw grid lines
+        for x in range(0, self.frame_size_x, self.pixel_size):
+            pygame.draw.line(self.game_window, self.black, (x, 0), (x, self.frame_size_y))
+        for y in range(0, self.frame_size_y, self.pixel_size):
+            pygame.draw.line(self.game_window, self.black, (0, y), (self.frame_size_x, y))
+            
+        # bar showing remaining cycles
+        pygame.draw.rect(self.game_window, self.white, pygame.Rect(0, 0, (self.max_cycles_since_last_food - self.cycles_since_last_food) * self.frame_size_x/self.max_cycles_since_last_food, self.pixel_size/2))
 
         pygame.display.update()
 
