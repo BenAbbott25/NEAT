@@ -86,7 +86,9 @@ class Game:
     def calculate_fitness(self):
         fitnesses = {}
         for player in self.players:
-            player.fitness = player.health + 10 * player.kill_count - player.shotsFired + player.steps
+            edge_penalty = 1000 if player.x == 0 or player.y == 0 or player.x == self.frame_size_x or player.y == self.frame_size_y else 0
+            no_movement_penalty = 1000 if player.steps == 0 else 0
+            player.fitness = player.health/10 + 10 * player.kill_count + player.steps/100 - edge_penalty - no_movement_penalty
             fitnesses[player.id] = player.fitness
         return fitnesses
         
@@ -119,17 +121,18 @@ class Player:
 
     def moveTurnAndShoot(self, inputs):
         # up, down, left, right, shoot
-        if inputs[0] > 0.5:
+        if inputs[0] > 0.75:
             self.y -= self.speed
-        if inputs[1] > 0.5:
+        if inputs[1] > 0.75:
             self.y += self.speed
-        if inputs[2] > 0.5:
+        if inputs[2] > 0.75:
             self.x -= self.speed
-        if inputs[3] > 0.5:
+        if inputs[3] > 0.75:
             self.x += self.speed
 
-        if inputs[0] > 0.5 or inputs[1] > 0.5 or inputs[2] > 0.5 or inputs[3] > 0.5:
-            self.steps += 1
+        if inputs[0] > 0.75 or inputs[1] > 0.75 or inputs[2] > 0.75 or inputs[3] > 0.75:
+            if self.x != self.game.frame_size_x and self.x != 0 and self.y != self.game.frame_size_y and self.y != 0:
+                self.steps += 1
 
         # rotating
         if inputs[4] > 0.75:
@@ -208,16 +211,12 @@ class Player:
     def checkOutOfBounds(self):
         if self.x < 0:
             self.x = 0
-            self.health -= 10
         if self.x > self.game.frame_size_x:
             self.x = self.game.frame_size_x
-            self.health -= 10
         if self.y < 0:
             self.y = 0
-            self.health -= 10
         if self.y > self.game.frame_size_y:
             self.y = self.game.frame_size_y
-            self.health -= 10
 
     def checkHit(self):
         pass
@@ -263,7 +262,7 @@ class Bullet:
         for player in [p for p in self.game.players if p != self.source]:
             if self.x > player.x - player.size and self.x < player.x + player.size:
                 if self.y > player.y - player.size and self.y < player.y + player.size:
-                    player.health -= 50
+                    player.health -= 100
                     if player.health <= 0:
                         self.source.kill_count += 1
                     if self in self.game.bullets:
