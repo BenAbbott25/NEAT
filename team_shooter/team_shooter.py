@@ -10,11 +10,17 @@ class Game:
         self.is_game_over = False
         self.num_players = len(players)
         self.players = []
+        self.teams = [[], []]  # New attribute for teams
         self.timer = 250
         self.max_timer = 250
         self.playerSensors = {}
-        for player in players:
-            self.players.append(Player(self, player, np.random.randint(0,frame_x), np.random.randint(0,frame_y), (255, 255, 255), 0.0, 10, 3)) 
+        for i, player in enumerate(players):
+            if i % 2 == 0:
+                new_player = Player(self, player, np.random.randint(0,frame_x//2), np.random.randint(0,frame_y), (255, 155, 255), 0.0, 10, 3, team=i%2)
+            else:
+                new_player = Player(self, player, np.random.randint(0,frame_x), np.random.randint(0,frame_y), (255, 255, 155), 0.0, 10, 3, team=i%2) 
+            self.players.append(new_player)
+            self.teams[i%2].append(new_player)  # Assign players to teams
             self.playerSensors[player] = np.zeros(12)
         self.bullets = []
 
@@ -61,7 +67,7 @@ class Game:
 
     def run(self, playerInputs):
         while not self.is_game_over:
-            if len(self.players) == 1 or self.timer <= 0:
+            if len(self.teams[0]) == 0 or len(self.teams[1]) == 0 or self.timer <= 0:  # Game over condition
                 self.game_over()
             # self.fps_controller.tick(10)
             for event in pygame.event.get():
@@ -86,20 +92,22 @@ class Game:
     def calculate_fitness(self):
         fitnesses = {}
         for player in self.players:
-            player.fitness = player.health + 10 * player.kill_count - player.shotsFired + player.steps
+            player.fitness = player.health + 10 * player.kill_count + player.steps
             fitnesses[player.id] = player.fitness
         return fitnesses
         
 
     def game_over(self):
         self.is_game_over = True
+        winning_team = 0 if len(self.teams[0]) > 0 else 1  # Determine the winning team
+        print(f'Team {winning_team} wins!')
         # pygame.quit()
         # sys.exit()
 
 
 
 class Player:
-    def __init__(self, game, id, x, y, color, direction, size, speed, health=100):
+    def __init__(self, game, id, x, y, color, direction, size, speed, health=100, team=0):
         self.game = game
         self.id = id
         self.x = x
@@ -116,6 +124,7 @@ class Player:
         self.sensors = [0 for _ in range(13)]
         self.steps = 0
         self.shotsFired = 0
+        self.team = team  # New attribute for team
 
     def moveTurnAndShoot(self, inputs):
         # up, down, left, right, shoot
@@ -208,16 +217,12 @@ class Player:
     def checkOutOfBounds(self):
         if self.x < 0:
             self.x = 0
-            self.health -= 10
         if self.x > self.game.frame_size_x:
             self.x = self.game.frame_size_x
-            self.health -= 10
         if self.y < 0:
             self.y = 0
-            self.health -= 10
         if self.y > self.game.frame_size_y:
             self.y = self.game.frame_size_y
-            self.health -= 10
 
     def checkHit(self):
         pass
@@ -225,6 +230,7 @@ class Player:
     def checkDeath(self):
         if self.health <= 0:
             self.game.players.remove(self)
+            self.game.teams[self.team].remove(self)  # Remove player from team
             self.game.timer = self.game.max_timer
 
 class Bullet:

@@ -46,8 +46,9 @@ def run_neat(config_file):
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
 
-    run_save(p, 0, 100)
-    run_save(p, 0, 1000)
+    for i in range(0, 1500, 100):
+        run_save(p, i, i + 100)
+
 
 def run_save(p, start_gen, end_gen):
     winner = p.run(eval_genomes, end_gen - start_gen)
