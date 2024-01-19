@@ -2,14 +2,14 @@ import neat
 import os
 import pickle
 import tqdm
-from orbits import Game
+from orbits_multi import Game
 
 frame_size_x = 720
 frame_size_y = 480
 starting_fuel = 1000
 
-num_planets = 0
-starting_generation = 30
+num_planets = 1
+starting_generation = 0
 
 ending_generation = 2000
 save_every = 100
@@ -29,21 +29,24 @@ def eval_genomes(genomes, config):
     for i in tqdm.tqdm(range(0, len(genomes_list), batch_size)):
         group = genomes_list[i:i+batch_size]
         genome_ids = [genome_id for genome_id, _ in group]
-        game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids)
-        for genome_id, genome in group:
-            genome.fitness = 0
-            nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in group}
-        playerInputs = {}
-        while not game.is_game_over:
+        for _ in range(3):  # Repeat each game 3 times
+            game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids)
             for genome_id, genome in group:
-                sensors = game.get_sensor_data(genome_id)
-                inputs = nets[genome_id].activate(sensors)
-                playerInputs[genome_id] = inputs
-            game.run(playerInputs)
-        fitnesses = game.get_fitnesses()
+                genome.fitness = 0
+                nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in group}
+            playerInputs = {}
+            while not game.is_game_over:
+                for genome_id, genome in group:
+                    sensors = game.get_sensor_data(genome_id)
+                    inputs = nets[genome_id].activate(sensors)
+                    playerInputs[genome_id] = inputs
+                game.run(playerInputs)
+            fitnesses = game.get_fitnesses()
+            for genome_id, genome in group:
+                if genome_id in fitnesses:
+                    genome.fitness += fitnesses[genome_id]  # Accumulate fitness over the 3 games
         for genome_id, genome in group:
-            if genome_id in fitnesses:
-                genome.fitness = fitnesses[genome_id]
+            genome.fitness /= 3  # Average the fitness over the 3 games
 
 def run_neat(config_file, starting_generation=0, ending_generation=2000, save_every=100):
     update_config(num_planets)
@@ -73,13 +76,15 @@ def run_neat(config_file, starting_generation=0, ending_generation=2000, save_ev
     print("Winner's genome saved to winner.pkl")
 
 def update_config(num_planets):
+    print("Updating config file...")
     with open('neat-config.ini', 'r') as f:
         config_lines = f.readlines()
 
     with open('neat-config.ini', 'w') as f:
+        print(f"Updating config file with {num_planets} planets...")
         for line in config_lines:
             if line.startswith('num_inputs'):
-                f.write(f'num_inputs = {num_planets + 12}\n')
+                f.write(f'num_inputs = {num_planets * 2 + 12}\n')
             else:
                 f.write(line)    
 
@@ -88,8 +93,8 @@ if __name__ == '__main__':
     config_path = os.path.join(local_dir, 'neat-config.ini')
     if previous_gen < 10:
         run_neat(config_path, 0, 10, 1)
-    if previous_gen < 100:
-        run_neat(config_path, previous_gen, 100, 10)
+    if previous_gen < 100 :
+        run_neat(config_path, 10, 100, 10)
         run_neat(config_path, 100, 1000, 100)
     else:
         run_neat(config_path, previous_gen, 2000, 100)
