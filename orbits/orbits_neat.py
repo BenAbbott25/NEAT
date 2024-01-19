@@ -9,7 +9,7 @@ frame_size_y = 480
 starting_fuel = 1000
 
 num_planets = 0
-starting_generation = 0
+starting_generation = 30
 
 ending_generation = 2000
 save_every = 100
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     if previous_gen < 10:
         run_neat(config_path, 0, 10, 1)
     if previous_gen < 100:
-        run_neat(config_path, 10, 100, 10)
+        run_neat(config_path, previous_gen, 100, 10)
         run_neat(config_path, 100, 1000, 100)
     else:
         run_neat(config_path, previous_gen, 2000, 100)
