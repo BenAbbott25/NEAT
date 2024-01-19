@@ -14,6 +14,8 @@ starting_generation = 30
 ending_generation = 2000
 save_every = 100
 
+batch_size = 100
+
 if starting_generation == 0:
     previous_gen = 0
 else:
@@ -22,22 +24,26 @@ else:
 
 
 def eval_genomes(genomes, config):
-    for genome_id, genome in tqdm.tqdm(genomes):
-        fitness = 0
-        for i in range(3):
-            fitness += runGame(genome_id, genome, config)
-        fitness /= 3
-        genome.fitness = fitness
+    genomes_list = list(genomes)
 
-def runGame(genome_id, genome, config):
-    net = neat.nn.FeedForwardNetwork.create(genome, config)
-    game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel)
-    while game.is_game_over == False:
-        sensors = game.get_sensor_data(game.player)
-        inputs = net.activate(sensors)
-        game.run(inputs)
-    return  game.calculate_fitness()
-
+    for i in tqdm.tqdm(range(0, len(genomes_list), batch_size)):
+        group = genomes_list[i:i+batch_size]
+        genome_ids = [genome_id for genome_id, _ in group]
+        game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids)
+        for genome_id, genome in group:
+            genome.fitness = 0
+            nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in group}
+        playerInputs = {}
+        while not game.is_game_over:
+            for genome_id, genome in group:
+                sensors = game.get_sensor_data(genome_id)
+                inputs = nets[genome_id].activate(sensors)
+                playerInputs[genome_id] = inputs
+            game.run(playerInputs)
+        fitnesses = game.get_fitnesses()
+        for genome_id, genome in group:
+            if genome_id in fitnesses:
+                genome.fitness = fitnesses[genome_id]
 
 def run_neat(config_file, starting_generation=0, ending_generation=2000, save_every=100):
     update_config(num_planets)
