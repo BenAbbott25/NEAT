@@ -2,13 +2,13 @@ import neat
 import os
 import pickle
 import tqdm
-from shooter import Game
+from team_shooter import Game
 import random
 import numpy as np
 
 frame_size_x = 720
 frame_size_y = 480
-player__batch_size = 10
+player__batch_size = 2
 
 def eval_genomes(genomes, config):
     genomes_list = list(genomes)
