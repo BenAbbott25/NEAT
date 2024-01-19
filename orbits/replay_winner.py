@@ -2,7 +2,7 @@ import pygame
 import neat
 import numpy as np
 import pickle
-from orbits import Game
+from orbits_single import Game
 
 frame_size_x = 720
 frame_size_y = 480
