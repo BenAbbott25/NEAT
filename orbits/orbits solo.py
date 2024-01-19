@@ -8,17 +8,12 @@ class Game:
         self.frames_y = frames_y
 
         self.is_game_over = False
-        self.end_all = False
 
-        self.start_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
-        self.end_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
-        while np.sqrt((self.start_point[0] - self.end_point[0])**2 + (self.start_point[1] - self.end_point[1])**2) < 100:
-            self.end_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
+        self.start_point = [np.random.randint(0,frames_x), np.random.randint(0,frames_y)]
+        self.end_point = [np.random.randint(0,frames_x), np.random.randint(0,frames_y)]
 
-        self.player = Player(self, self.start_point[0], self.start_point[1], 5, 10, 10, fuel)
-        self.planets = [Planet(np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9))), 1000) for _ in range(num_planets)]
-
-        self.init_fuel = fuel
+        self.player = Player(self, self.start_point[0], self.start_point[1], Vector(0,0), 5, 10, 10)
+        self.planets = [Planet(np.random.randint(0,frames_x), np.random.randint(0,frames_y), 1000) for _ in range(num_planets)]
 
         self.screen = pygame.display.set_mode((frames_x, frames_y))
         pygame.init()
@@ -36,29 +31,25 @@ class Game:
         self.check_gravity()
         self.check_collision()
         self.check_fuel()
+        self.player.handle_input()
         self.player.move()
-        # if self.player.inputVector.magnitude > 0:
-        #     print(f"M:{self.player.inputVector.magnitude}, A:{self.player.inputVector.angle}")
-        self.player.fuel -= self.player.inputVector.magnitude / self.player.max_thrust
-        self.player.fuel -= 1
+        self.player.fuel -= self.player.inputVector.magnitude
 
-    def run(self, inputs):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.end_all = True
-                self.game_over()
-        self.player.handle_input(inputs)
-        self.update()
-        self.draw()
+    def run(self):
+        while not self.is_game_over:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.game_over()
+            self.update()
+            self.draw()
 
     def check_collision(self):
         for planet in self.planets:
             if np.sqrt((self.player.x - planet.x)**2 + (self.player.y - planet.y)**2) < self.player.mass + planet.mass/100:
-                self.player.fitness -= 100
+                print(f"COLLISION with planet at {planet.x}, {planet.y}" )
                 self.game_over()
         if np.sqrt((self.player.x - self.end_point[0])**2 + (self.player.y - self.end_point[1])**2) < self.player.mass:
-            # print("VICTORY! Reached the endpoint.")
-            self.player.fitness += 1000
+            print("VICTORY! Reached the endpoint.")
             self.game_over()
 
     def check_gravity(self):
@@ -82,34 +73,30 @@ class Game:
     def get_sensor_data(self, player):
         player_x = player.x
         player_y = player.y
-        movement_vector_x = player.movementVector.dx
-        movement_vector_y = player.movementVector.dy
-        input_vector_x = player.inputVector.dx
-        input_vector_y = player.inputVector.dy
+        player_vector_dx = player.vector.dx
+        player_vector_dy = player.vector.dy
         player_mass = player.mass
-        max_thrust = player.max_thrust
-        max_speed = player.max_speed
-        fuel = player.fuel/self.init_fuel
+        player_max_speed = player.max_speed
         end_point_x = self.end_point[0]
         end_point_y = self.end_point[1]
-        
-        return [player_x, player_y, movement_vector_x, movement_vector_y, input_vector_x, input_vector_y, player_mass, max_thrust, max_speed, fuel, end_point_x, end_point_y]
+
 
     def calculate_fitness(self):
-        initial_distance = np.sqrt((self.start_point[0] - self.end_point[0])**2 + (self.start_point[1] - self.end_point[1])**2)
         distance = np.sqrt((self.player.x - self.end_point[0])**2 + (self.player.y - self.end_point[1])**2)
-        df = initial_distance / distance + self.player.fuel/self.init_fuel
-        self.player.fitness += df
-        return self.player.fitness
+        return 1000 / distance + self.player.fuel/10000
     
     def game_over(self):
+        self.calculate_fitness()
         self.is_game_over = True
 
+
+
+
 class Player:
-    def __init__(self, game, init_x, init_y, mass, max_speed, max_thrust, fuel=10000):
+    def __init__(self, game, init_x, init_y, init_vector, mass, max_speed, max_thrust, fuel=10000):
         self.x = init_x
         self.y = init_y
-        self.movementVector = Vector(0,0)
+        self.movementVector = init_vector
         self.inputVector = radVector(0,0)
         self.mass = mass
         self.game = game
@@ -136,7 +123,6 @@ class Player:
 
 
         self.inputVector.update()
-        # print(f"Angle: {self.inputVector.angle}, Magnitude: {self.inputVector.magnitude}")
         start_x = self.x + 15 * np.cos(self.inputVector.angle)
         start_y = self.y + 15 * np.sin(self.inputVector.angle)
         end_x = self.x + (self.inputVector.magnitude + 15) * np.cos(self.inputVector.angle)
@@ -145,25 +131,21 @@ class Player:
 
 
     def draw_fuel(self, screen):
-        fuel_percentage = self.fuel / self.game.init_fuel
+        fuel_percentage = self.fuel / 10000
         pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(0, 0, self.game.frames_x, 5))
         pygame.draw.rect(screen, (0, 255, 0), pygame.Rect(0, 0, self.game.frames_x * fuel_percentage, 5))
 
-    def handle_input(self, inputs):
-        angle_input = inputs[0]
-        thrust_input = inputs[1]
+    def handle_input(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP] and self.inputVector.magnitude < self.max_thrust:
+            self.inputVector.magnitude += 1
+        if keys[pygame.K_DOWN] and self.inputVector.magnitude > 0:
+            self.inputVector.magnitude -= 1
+        if keys[pygame.K_LEFT]:
+            self.inputVector.angle -= 0.1
+        if keys[pygame.K_RIGHT]:
+            self.inputVector.angle += 0.1
 
-        # print(f"Angle: {angle_input}, Thrust: {thrust_input}")
-        # print(f"Angle change: {np.tanh(angle_input)/10}, Thrust change: {np.tanh(thrust_input)/10}")
-
-        self.inputVector.angle += max(min(angle_input/10, 0.1), -0.1)
-        self.inputVector.magnitude += max(min(thrust_input/10, 0.1), -0.1)
-        if self.inputVector.magnitude > self.max_thrust:
-            self.inputVector.magnitude = self.max_thrust
-        if self.inputVector.magnitude < 0:
-            self.inputVector.magnitude = 0
-        
-        self.inputVector.update()
         self.movementVector.dx += self.inputVector.dx/1000
         self.movementVector.dy += self.inputVector.dy/1000
 
@@ -215,5 +197,5 @@ class radVector:
         self.dx = self.magnitude * np.cos(self.angle)
         self.dy = self.magnitude * np.sin(self.angle)
 
-# game = Game(720, 480, 0, 10000)
-# game.run()
+game = Game(720, 480, 0, 10000)
+game.run()
