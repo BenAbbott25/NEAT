@@ -8,9 +8,8 @@ frame_size_x = 720
 frame_size_y = 480
 starting_fuel = 1000
 
-num_planets = 1
+num_planets = 2
 starting_generation = 0
-
 ending_generation = 2000
 save_every = 100
 
@@ -25,7 +24,7 @@ else:
 
 def eval_genomes(genomes, config):
     genomes_list = list(genomes)
-
+    batch_size = len(genomes_list)
     for i in tqdm.tqdm(range(0, len(genomes_list), batch_size)):
         group = genomes_list[i:i+batch_size]
         genome_ids = [genome_id for genome_id, _ in group]

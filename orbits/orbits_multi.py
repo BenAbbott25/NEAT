@@ -20,10 +20,16 @@ class Game:
         self.players = []
         self.playerSensors = {}
         for player_id in players:
-            self.players.append(Player(self, player_id, self.start_point[0], self.start_point[1], 5, 10, 10, fuel))
+            self.players.append(Player(self, player_id, self.start_point[0], self.start_point[1], 5, 10, 25, fuel))
             self.playerSensors[player_id] = np.zeros(12 + 2*num_planets)
         self.planets = []
-        self.planets = [Planet(np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9))), 1000) for _ in range(num_planets)]
+        for i in range(num_planets):
+            planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
+            planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
+            while np.sqrt((planet_x - self.start_point[0])**2 + (planet_y - self.start_point[1])**2) < 100 or np.sqrt((planet_x - self.end_point[0])**2 + (planet_y - self.end_point[1])**2) < 100:
+                planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
+                planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
+            self.planets.append(Planet(planet_x, planet_y, 1000))
 
         self.init_fuel = fuel
 
@@ -37,6 +43,7 @@ class Game:
         for planet in self.planets:
             planet.draw(self.screen)
 
+        pygame.draw.circle(self.screen, (0, 255, 0), (self.start_point[0], self.start_point[1]), 5)
         pygame.draw.circle(self.screen, (255, 0, 0), (self.end_point[0], self.end_point[1]), 5)
         pygame.display.flip()
 
@@ -45,7 +52,9 @@ class Game:
             player.check_gravity()
             player.check_collision()
             player.check_fuel()
+            player.checkSensors()
             player.move()
+            player.update_min_distance()
             player.fuel -= player.inputVector.magnitude / player.max_thrust
             player.fuel -= 1
 
@@ -79,14 +88,18 @@ class Player:
         self.player_id = id
         self.x = init_x
         self.y = init_y
-        self.movementVector = Vector(0,0)
-        self.inputVector = radVector(0,0)
-        self.mass = mass
         self.game = game
+        dx = self.game.end_point[0] - self.x
+        dy = self.game.end_point[1] - self.y
+        init_vector_angle = np.arctan2(dy, dx)
+        self.movementVector = Vector(0,0)
+        self.inputVector = radVector(init_vector_angle,0)
+        self.mass = mass
         self.max_speed = max_speed
         self.max_thrust = max_thrust
         self.fitness = 0
         self.fuel = fuel
+        self.min_distance = np.sqrt((self.game.start_point[0] - self.game.end_point[0])**2 + (self.game.start_point[1] - self.game.end_point[1])**2)
 
     def draw(self, screen):
         pygame.draw.circle(screen, (255, 255, 255), (self.x, self.y), self.mass)
@@ -122,8 +135,8 @@ class Player:
         angle_input = inputs[0]
         thrust_input = inputs[1]
 
-        self.inputVector.angle += max(min(angle_input/10, 0.1), -0.1)
-        self.inputVector.magnitude += max(min(thrust_input/10, 0.1), -0.1)
+        self.inputVector.angle += max(min(angle_input/10, 0.2), -0.2)
+        self.inputVector.magnitude += max(min(thrust_input/10, 1), -1)
         if self.inputVector.magnitude > self.max_thrust:
             self.inputVector.magnitude = self.max_thrust
         if self.inputVector.magnitude < 0:
@@ -188,21 +201,21 @@ class Player:
         if self in self.game.players:
             self.game.players.remove(self)
 
-    def checkSensors(self, player):
-        player_x = player.x
-        player_y = player.y
-        movement_vector_x = player.movementVector.dx
-        movement_vector_y = player.movementVector.dy
-        input_vector_x = player.inputVector.dx
-        input_vector_y = player.inputVector.dy
-        player_mass = player.mass
-        max_thrust = player.max_thrust
-        max_speed = player.max_speed
-        fuel = player.fuel/self.init_fuel
-        end_point_x = self.end_point[0]
-        end_point_y = self.end_point[1]
+    def checkSensors(self):
+        x = self.x
+        y = self.y
+        movement_vector_x = self.movementVector.dx
+        movement_vector_y = self.movementVector.dy
+        input_vector_x = self.inputVector.dx
+        input_vector_y = self.inputVector.dy
+        mass = self.mass
+        max_thrust = self.max_thrust
+        max_speed = self.max_speed
+        fuel = self.fuel/self.game.init_fuel
+        end_point_x = self.game.end_point[0]
+        end_point_y = self.game.end_point[1]
         
-        sensor_data = [player_x, player_y, movement_vector_x, movement_vector_y, input_vector_x, input_vector_y, player_mass, max_thrust, max_speed, fuel, end_point_x, end_point_y]
+        sensor_data = [x, y, movement_vector_x, movement_vector_y, input_vector_x, input_vector_y, mass, max_thrust, max_speed, fuel, end_point_x, end_point_y]
 
         for planet in self.game.planets:
             dx = planet.x - self.x
@@ -211,16 +224,19 @@ class Player:
             gravity = planet.mass / distance**2
             gravity_dx = gravity * dx / distance
             gravity_dy = gravity * dy / distance
-            print(sensor_data)
             sensor_data.extend([gravity_dx, gravity_dy])
-            print(sensor_data)
 
-        self.game.playerSensors[self.id] = sensor_data
+        self.game.playerSensors[self.player_id] = sensor_data
+
+    def update_min_distance(self):
+            current_distance = np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2)
+            if current_distance < self.min_distance:
+                self.min_distance = current_distance
 
     def update_fitness(self):
         initial_distance = np.sqrt((self.game.start_point[0] - self.game.end_point[0])**2 + (self.game.start_point[1] - self.game.end_point[1])**2) * 0.9
-        distance = np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2)
-        self.fitness = initial_distance / distance + self.fuel/self.game.init_fuel
+        current_distance = np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2)
+        self.fitness += initial_distance / current_distance + self.fuel/self.game.init_fuel + (initial_distance / self.min_distance)/2
         # print(f"player {self.player_id} fitness: {self.fitness}")
 
 
