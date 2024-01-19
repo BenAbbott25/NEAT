@@ -8,7 +8,7 @@ frame_size_x = 720
 frame_size_y = 480
 starting_fuel = 1000
 
-save_file = "saves/0_planets/winner_gen_5.pkl"
+save_file = "saves/0_planets/winner_gen_30.pkl"
 if save_file != "":
     generation = int(save_file.split("_")[-1].split(".")[0])
     num_planets = int(save_file.split("/")[1].split("_")[0])

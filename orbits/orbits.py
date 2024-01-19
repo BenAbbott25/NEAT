@@ -12,7 +12,7 @@ class Game:
 
         self.start_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
         self.end_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
-        while np.sqrt((self.start_point[0] - self.end_point[0])**2 + (self.start_point[1] - self.end_point[1])**2) < 100:
+        while np.sqrt((self.start_point[0] - self.end_point[0])**2 + (self.start_point[1] - self.end_point[1])**2) < 500:
             self.end_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
 
         self.player = Player(self, self.start_point[0], self.start_point[1], 5, 10, 10, fuel)
@@ -54,11 +54,11 @@ class Game:
     def check_collision(self):
         for planet in self.planets:
             if np.sqrt((self.player.x - planet.x)**2 + (self.player.y - planet.y)**2) < self.player.mass + planet.mass/100:
-                self.player.fitness -= 100
+                self.player.fitness -= 2
                 self.game_over()
         if np.sqrt((self.player.x - self.end_point[0])**2 + (self.player.y - self.end_point[1])**2) < self.player.mass:
             # print("VICTORY! Reached the endpoint.")
-            self.player.fitness += 1000
+            self.player.fitness += 2
             self.game_over()
 
     def check_gravity(self):

@@ -7,9 +7,10 @@ from orbits import Game
 frame_size_x = 720
 frame_size_y = 480
 starting_fuel = 1000
-num_planets = 0
 
+num_planets = 0
 starting_generation = 0
+
 ending_generation = 2000
 save_every = 100
 
