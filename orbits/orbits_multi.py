@@ -14,7 +14,7 @@ class Game:
 
         self.start_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
         self.end_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
-        while np.sqrt((self.start_point[0] - self.end_point[0])**2 + (self.start_point[1] - self.end_point[1])**2) < 100:
+        while np.sqrt((self.start_point[0] - self.end_point[0])**2 + (self.start_point[1] - self.end_point[1])**2) < 400:
             self.end_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
 
         self.players = []

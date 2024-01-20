@@ -4,11 +4,13 @@ import pickle
 import tqdm
 from orbits_multi import Game
 
-frame_size_x = 720
-frame_size_y = 480
+# frame_size_x = 720
+# frame_size_y = 480
+frame_size_x = 1280
+frame_size_y = 720
 starting_fuel = 1000
 
-num_planets = 2
+num_planets = 4
 starting_generation = 0
 ending_generation = 2000
 save_every = 100
