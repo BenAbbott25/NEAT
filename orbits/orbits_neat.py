@@ -30,7 +30,7 @@ def eval_genomes(genomes, config):
     for i in tqdm.tqdm(range(0, len(genomes_list), batch_size)):
         group = genomes_list[i:i+batch_size]
         genome_ids = [genome_id for genome_id, _ in group]
-        for _ in range(3):  # Repeat each game 3 times
+        for _ in tqdm.tqdm(range(3)):  # Repeat each game 3 times
             game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids)
             for genome_id, genome in group:
                 genome.fitness = 0

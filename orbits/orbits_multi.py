@@ -12,10 +12,21 @@ class Game:
 
         self.fitnesses = {}
 
-        self.start_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
-        self.end_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
-        while np.sqrt((self.start_point[0] - self.end_point[0])**2 + (self.start_point[1] - self.end_point[1])**2) < 400:
-            self.end_point = [np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9))), np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))]
+        # split into 4 quadrants and place start and end points in different quadrants
+        end_quadrant_x = np.random.randint(0,1)
+        end_quadrant_y = np.random.randint(0,1)
+        start_quadrant_x = np.random.randint(0,1)
+        start_quadrant_y = np.random.randint(0,1)
+
+        if end_quadrant_x == start_quadrant_x and end_quadrant_y == start_quadrant_y:
+            end_quadrant_x = 1 - end_quadrant_x
+            end_quadrant_y = 1 - end_quadrant_y
+
+        self.quadrant_start_point = [np.random.randint(int(np.floor(frames_x*0.1/4)),int(np.ceil(frames_x*0.9/4))), np.random.randint(int(np.floor(frames_y*0.1/4)),int(np.ceil(frames_y*0.9/4)))]
+        self.quadrant_end_point = [np.random.randint(int(np.floor(frames_x*0.1/4)),int(np.ceil(frames_x*0.9/4))), np.random.randint(int(np.floor(frames_y*0.1/4)),int(np.ceil(frames_y*0.9/4)))]
+
+        self.start_point = [self.quadrant_start_point[0] + start_quadrant_x * frames_x/2, self.quadrant_start_point[1] + start_quadrant_y * frames_y/2]
+        self.end_point = [self.quadrant_end_point[0] + end_quadrant_x * frames_x/2, self.quadrant_end_point[1] + end_quadrant_y * frames_y/2]
 
         self.players = []
         self.playerSensors = {}
@@ -135,8 +146,8 @@ class Player:
         angle_input = inputs[0]
         thrust_input = inputs[1]
 
-        self.inputVector.angle += max(min(angle_input/10, 0.2), -0.2)
-        self.inputVector.magnitude += max(min(thrust_input/10, 1), -1)
+        self.inputVector.angle += max(min(angle_input, 0.2), -0.2)
+        self.inputVector.magnitude += max(min(thrust_input, 1), -1)
         if self.inputVector.magnitude > self.max_thrust:
             self.inputVector.magnitude = self.max_thrust
         if self.inputVector.magnitude < 0:
@@ -148,8 +159,8 @@ class Player:
 
 
     def accelerate(self, ddx, ddy):
-        self.movementVector.dx += ddx
-        self.movementVector.dy += ddy
+        self.movementVector.dx += ddx / self.mass
+        self.movementVector.dy += ddy / self.mass
         if self.movementVector.dx ** 2 + self.movementVector.dy ** 2 > self.max_speed ** 2:
             self.movementVector.dx *= self.max_speed / np.sqrt(self.movementVector.dx ** 2 + self.movementVector.dy ** 2)
             self.movementVector.dy *= self.max_speed / np.sqrt(self.movementVector.dx ** 2 + self.movementVector.dy ** 2)
@@ -173,7 +184,7 @@ class Player:
             if np.sqrt((self.x - planet.x)**2 + (self.y - planet.y)**2) < self.mass + planet.mass/100:
                 self.fitness -= 10 * self.fuel/self.game.init_fuel
                 self.remove()
-        if np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2) < self.mass:
+        if np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2) < self.mass + 5:
             self.fitness += 10 * self.fuel/self.game.init_fuel
             self.remove()
 
