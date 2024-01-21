@@ -13,10 +13,10 @@ class Game:
         self.fitnesses = {}
 
         # split into 4 quadrants and place start and end points in different quadrants
-        end_quadrant_x = np.random.randint(0,1)
-        end_quadrant_y = np.random.randint(0,1)
-        start_quadrant_x = np.random.randint(0,1)
-        start_quadrant_y = np.random.randint(0,1)
+        end_quadrant_x = np.random.randint(0,2)
+        end_quadrant_y = np.random.randint(0,2)
+        start_quadrant_x = np.random.randint(0,2)
+        start_quadrant_y = np.random.randint(0,2)
 
         if end_quadrant_x == start_quadrant_x and end_quadrant_y == start_quadrant_y:
             end_quadrant_x = 1 - end_quadrant_x
@@ -27,6 +27,9 @@ class Game:
 
         self.start_point = [self.quadrant_start_point[0] + start_quadrant_x * frames_x/2, self.quadrant_start_point[1] + start_quadrant_y * frames_y/2]
         self.end_point = [self.quadrant_end_point[0] + end_quadrant_x * frames_x/2, self.quadrant_end_point[1] + end_quadrant_y * frames_y/2]
+
+        # self.start_point = [frames_x/4, frames_y/2]
+        # self.end_point = [frames_x*3/4, frames_y/2]
 
         self.players = []
         self.playerSensors = {}
@@ -40,7 +43,8 @@ class Game:
             while np.sqrt((planet_x - self.start_point[0])**2 + (planet_y - self.start_point[1])**2) < 100 or np.sqrt((planet_x - self.end_point[0])**2 + (planet_y - self.end_point[1])**2) < 100:
                 planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
                 planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
-            self.planets.append(Planet(planet_x, planet_y, 1000))
+            self.planets.append(Planet(planet_x, planet_y, np.random.randint(800,1800)))
+        # self.planets = [Planet(frames_x/2, frames_y*(i+0.5)/num_planets, 1000) for i in range(num_planets)]
 
         self.init_fuel = fuel
 
@@ -102,7 +106,7 @@ class Player:
         self.game = game
         dx = self.game.end_point[0] - self.x
         dy = self.game.end_point[1] - self.y
-        init_vector_angle = np.arctan2(dy, dx)
+        init_vector_angle = np.arctan2(dy, dx) + np.random.uniform(-0.1, 0.1)
         self.movementVector = Vector(0,0)
         self.inputVector = radVector(init_vector_angle,0)
         self.mass = mass
@@ -152,6 +156,8 @@ class Player:
             self.inputVector.magnitude = self.max_thrust
         if self.inputVector.magnitude < 0:
             self.inputVector.magnitude = 0
+        
+        self.fuel -= abs(self.inputVector.angle)
         
         self.inputVector.update()
         self.movementVector.dx += self.inputVector.dx/1000

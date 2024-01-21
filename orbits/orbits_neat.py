@@ -4,13 +4,14 @@ import pickle
 import tqdm
 from orbits_multi import Game
 
-# frame_size_x = 720
-# frame_size_y = 480
-frame_size_x = 1280
-frame_size_y = 720
+frame_size_x = 720
+frame_size_y = 480
+# frame_size_x = 1280
+# frame_size_y = 720
 starting_fuel = 1000
 
-num_planets = 4
+population_size = 100
+num_planets = 3
 starting_generation = 0
 ending_generation = 2000
 save_every = 100
@@ -20,13 +21,12 @@ batch_size = 100
 if starting_generation == 0:
     previous_gen = 0
 else:
-    save_file = f"saves/{num_planets}_planets/winner_gen_{starting_generation}.pkl"
+    save_file = f"saves/{num_planets}_planets_{population_size}_pop/winner_gen_{starting_generation}.pkl"
     previous_gen = int(save_file.split("_")[-1].split(".")[0])
 
 
 def eval_genomes(genomes, config):
     genomes_list = list(genomes)
-    batch_size = len(genomes_list)
     for i in tqdm.tqdm(range(0, len(genomes_list), batch_size)):
         group = genomes_list[i:i+batch_size]
         genome_ids = [genome_id for genome_id, _ in group]
@@ -86,6 +86,8 @@ def update_config(num_planets):
         for line in config_lines:
             if line.startswith('num_inputs'):
                 f.write(f'num_inputs = {num_planets * 2 + 12}\n')
+            elif line.startswith('pop_size'):
+                f.write(f'pop_size = {population_size}\n')
             else:
                 f.write(line)    
 
