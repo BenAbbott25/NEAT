@@ -34,7 +34,7 @@ class Game:
         self.players = []
         self.playerSensors = {}
         for player_id in players:
-            self.players.append(Player(self, player_id, self.start_point[0], self.start_point[1], 5, 10, 25, fuel))
+            self.players.append(Player(self, player_id, self.start_point[0], self.start_point[1], 5, 10, 10, fuel))
             self.playerSensors[player_id] = np.zeros(12 + 2*num_planets)
         self.planets = []
         for i in range(num_planets):
@@ -104,8 +104,10 @@ class Player:
         self.x = init_x
         self.y = init_y
         self.game = game
-        dx = self.game.end_point[0] - self.x
-        dy = self.game.end_point[1] - self.y
+        # dx = self.game.end_point[0] - self.x
+        # dy = self.game.end_point[1] - self.y
+        dx = self.game.frames_x/2 - self.x
+        dy = self.game.frames_y/2 - self.y
         init_vector_angle = np.arctan2(dy, dx) + np.random.uniform(-0.1, 0.1)
         self.movementVector = Vector(0,0)
         self.inputVector = radVector(init_vector_angle,0)

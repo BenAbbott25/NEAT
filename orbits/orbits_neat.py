@@ -10,8 +10,8 @@ frame_size_y = 480
 # frame_size_y = 720
 starting_fuel = 1000
 
-population_size = 100
-num_planets = 3
+population_size = 1000
+num_planets = 0
 starting_generation = 0
 ending_generation = 2000
 save_every = 100
@@ -30,7 +30,7 @@ def eval_genomes(genomes, config):
     for i in tqdm.tqdm(range(0, len(genomes_list), batch_size)):
         group = genomes_list[i:i+batch_size]
         genome_ids = [genome_id for genome_id, _ in group]
-        for _ in tqdm.tqdm(range(3)):  # Repeat each game 3 times
+        for _ in range(3):  # Repeat each game 3 times
             game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids)
             for genome_id, genome in group:
                 genome.fitness = 0
@@ -69,9 +69,12 @@ def run_neat(config_file, starting_generation=0, ending_generation=2000, save_ev
         winner = p.run(eval_genomes, save_every)
         # Save the winner and the population state.
         print(f"Saving winner and population of generation {i+save_every}...")
-        with open(f"saves/{num_planets}_planets/winner_gen_{i+save_every}.pkl", "wb") as f:
+        save_dir = f"saves/{num_planets}_planets_{population_size}_pop"
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        with open(f"saves/{num_planets}_planets_{population_size}_pop/winner_gen_{i+save_every}.pkl", "wb") as f:
             pickle.dump(winner, f)
-        with open(f"saves/{num_planets}_planets/population_gen_{i+save_every}.pkl", "wb") as f:
+        with open(f"saves/{num_planets}_planets_{population_size}_pop/population_gen_{i+save_every}.pkl", "wb") as f:
             pickle.dump(p, f)
 
     print("Winner's genome saved to winner.pkl")
