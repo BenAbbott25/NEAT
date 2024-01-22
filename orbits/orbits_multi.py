@@ -223,19 +223,31 @@ class Player:
     def checkSensors(self):
         x = self.x
         y = self.y
+
         movement_vector_x = self.movementVector.dx
         movement_vector_y = self.movementVector.dy
-        input_vector_x = self.inputVector.dx
-        input_vector_y = self.inputVector.dy
-        mass = self.mass
-        max_thrust = self.max_thrust
-        max_speed = self.max_speed
+        movement_vector_angle = np.arctan2(movement_vector_y, movement_vector_x)
+        movement_vector_magnitude = np.sqrt(movement_vector_x**2 + movement_vector_y**2)
+
+        # input_vector_x = self.inputVector.dx
+        # input_vector_y = self.inputVector.dy
+        input_vector_angle = self.inputVector.angle
+        input_vector_magnitude = self.inputVector.magnitude
+
+        # mass = self.mass
+        # max_thrust = self.max_thrust
+        # max_speed = self.max_speed
         fuel = self.fuel/self.game.init_fuel
+
         end_point_x = self.game.end_point[0]
         end_point_y = self.game.end_point[1]
+        end_point_angle = np.arctan2(end_point_y - y, end_point_x - x)
+        end_point_magnitude = np.sqrt((end_point_x - x)**2 + (end_point_y - y)**2)
         
-        sensor_data = [x, y, movement_vector_x, movement_vector_y, input_vector_x, input_vector_y, mass, max_thrust, max_speed, fuel, end_point_x, end_point_y]
+        sensor_data = [x, y, movement_vector_angle, movement_vector_magnitude, input_vector_angle, input_vector_magnitude, fuel, end_point_angle, end_point_magnitude, end_point_x, end_point_y]
 
+        total_gravity_dx = 0
+        total_gravity_dy = 0
         for planet in self.game.planets:
             dx = planet.x - self.x
             dy = planet.y - self.y
@@ -243,7 +255,9 @@ class Player:
             gravity = planet.mass / distance**2
             gravity_dx = gravity * dx / distance
             gravity_dy = gravity * dy / distance
-            sensor_data.extend([gravity_dx, gravity_dy])
+            total_gravity_dx += gravity_dx
+            total_gravity_dy += gravity_dy
+        sensor_data.append(total_gravity_dx)
 
         self.game.playerSensors[self.player_id] = sensor_data
 
