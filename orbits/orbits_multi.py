@@ -1,3 +1,4 @@
+import colorsys
 import pygame
 import numpy as np
 import time
@@ -34,8 +35,8 @@ class Game:
         self.players = []
         self.playerSensors = {}
         for player_id in players:
-            self.players.append(Player(self, player_id, self.start_point[0], self.start_point[1], 5, 10, 10, fuel))
-            self.playerSensors[player_id] = np.zeros(12 + 2*num_planets)
+            self.players.append(Player(self, player_id, self.start_point[0], self.start_point[1], 5, 15, 15, fuel))
+            self.playerSensors[player_id] = np.zeros(11 + 2*num_planets*0)
         self.planets = []
         for i in range(num_planets):
             planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
@@ -51,8 +52,42 @@ class Game:
         self.screen = pygame.display.set_mode((frames_x, frames_y))
         pygame.init()
 
+    # draw gravity feild, colour for direction and brightness for magnitude
+    def draw_bg(self):
+        bg = pygame.Surface((self.frames_x, self.frames_y))
+        for x in range(5, self.frames_x):
+            for y in range(self.frames_y):
+                total_gravity_dx = 0
+                total_gravity_dy = 0
+                for planet in self.planets:
+                    dx = planet.x - x
+                    dy = planet.y - y
+                    if dx == 0 and dy == 0:
+                        continue
+                    distance = np.sqrt(dx**2 + dy**2)
+                    gravity = planet.mass / distance**2
+                    gravity_dx = gravity * dx / distance
+                    gravity_dy = gravity * dy / distance
+                    total_gravity_dx += gravity_dx / 10
+                    total_gravity_dy += gravity_dy / 10
+                total_gravity_angle = np.arctan2(total_gravity_dy, total_gravity_dx)
+                total_gravity_magnitude = np.sqrt(total_gravity_dx**2 + total_gravity_dy**2)
+
+                colour = (int(255 * (total_gravity_angle + np.pi) / (2*np.pi)), int(255 * (total_gravity_angle + np.pi) / (2*np.pi)), int(255 * (total_gravity_angle + np.pi) / (2*np.pi)))
+                brightness = min(int(255 * total_gravity_magnitude * 3), 255)
+
+                colourHSV = (((total_gravity_angle) / (2*np.pi))*360, 1, 1)
+                # print(f'colourHSL: {colourHSV}')
+                colourRGB = colorsys.hsv_to_rgb(*colourHSV)
+                # print(f'colourRGB: {colourRGB}')
+                
+                bg.set_at((x, y), colourRGB)
+        self.screen.blit(bg, (0, 0))
+            
+
     def draw(self):
         self.screen.fill((0, 0, 0))
+        # self.draw_bg()
         for player in self.players:
             player.draw(self.screen)
         for planet in self.planets:
@@ -74,10 +109,6 @@ class Game:
             player.fuel -= 1
 
     def run(self, playerInputs):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.end_all = True
-                self.game_over()
         for player in self.players:
             inputs = playerInputs[player.player_id]
             player.handle_input(inputs)
@@ -108,7 +139,7 @@ class Player:
         # dy = self.game.end_point[1] - self.y
         dx = self.game.frames_x/2 - self.x
         dy = self.game.frames_y/2 - self.y
-        init_vector_angle = np.arctan2(dy, dx) + np.random.uniform(-0.1, 0.1)
+        init_vector_angle = np.arctan2(dy, dx)
         self.movementVector = Vector(0,0)
         self.inputVector = radVector(init_vector_angle,0)
         self.mass = mass
@@ -116,6 +147,8 @@ class Player:
         self.max_thrust = max_thrust
         self.fitness = 0
         self.fuel = fuel
+        self.total_gravity_angle = 0
+        self.total_gravity_magnitude = 0
         self.min_distance = np.sqrt((self.game.start_point[0] - self.game.end_point[0])**2 + (self.game.start_point[1] - self.game.end_point[1])**2)
 
     def draw(self, screen):
@@ -141,6 +174,13 @@ class Player:
         end_x = self.x + (self.inputVector.magnitude + 15) * np.cos(self.inputVector.angle)
         end_y = self.y + (self.inputVector.magnitude + 15) * np.sin(self.inputVector.angle)
         pygame.draw.line(screen, (255, 255, 0), (start_x, start_y), (end_x, end_y))
+
+        # gravity vector in blue
+        start_x = self.x + 15 * np.cos(self.total_gravity_angle)
+        start_y = self.y + 15 * np.sin(self.total_gravity_angle)
+        end_x = self.x + min((100*self.total_gravity_magnitude) + 15, 50) * np.cos(self.total_gravity_angle)
+        end_y = self.y + min((100*self.total_gravity_magnitude) + 15, 50) * np.sin(self.total_gravity_angle)
+        pygame.draw.line(screen, (0, 0, 255), (start_x, start_y), (end_x, end_y))
 
 
     def draw_fuel(self, screen):
@@ -195,6 +235,8 @@ class Player:
         if np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2) < self.mass + 5:
             self.fitness += 10 * self.fuel/self.game.init_fuel
             self.remove()
+        if self.x == 0 or self.x == self.game.frames_x or self.y == 0 or self.y == self.game.frames_y:
+            self.fuel -= 10
 
     def check_gravity(self):
         total_gravity_dx = 0
@@ -224,6 +266,9 @@ class Player:
         x = self.x
         y = self.y
 
+        scaled_x = x / self.game.frames_x - 0.5
+        scaled_y = y / self.game.frames_y - 0.5
+
         movement_vector_x = self.movementVector.dx
         movement_vector_y = self.movementVector.dy
         movement_vector_angle = np.arctan2(movement_vector_y, movement_vector_x)
@@ -242,12 +287,22 @@ class Player:
         end_point_x = self.game.end_point[0]
         end_point_y = self.game.end_point[1]
         end_point_angle = np.arctan2(end_point_y - y, end_point_x - x)
-        end_point_magnitude = np.sqrt((end_point_x - x)**2 + (end_point_y - y)**2)
+        end_point_distance = np.sqrt((end_point_x - x)**2 + (end_point_y - y)**2)
         
-        sensor_data = [x, y, movement_vector_angle, movement_vector_magnitude, input_vector_angle, input_vector_magnitude, fuel, end_point_angle, end_point_magnitude, end_point_x, end_point_y]
+        sensor_data = [
+            scaled_x,
+            scaled_y,
+            movement_vector_angle,
+            movement_vector_magnitude,
+            input_vector_angle,
+            input_vector_magnitude,
+            fuel,
+            end_point_angle,
+            end_point_distance
+        ]
 
-        total_gravity_dx = 0
-        total_gravity_dy = 0
+        self.total_gravity_dx = 0
+        self.total_gravity_dy = 0
         for planet in self.game.planets:
             dx = planet.x - self.x
             dy = planet.y - self.y
@@ -255,9 +310,12 @@ class Player:
             gravity = planet.mass / distance**2
             gravity_dx = gravity * dx / distance
             gravity_dy = gravity * dy / distance
-            total_gravity_dx += gravity_dx
-            total_gravity_dy += gravity_dy
-        sensor_data.append(total_gravity_dx)
+            self.total_gravity_dx += gravity_dx
+            self.total_gravity_dy += gravity_dy
+        self.total_gravity_angle = np.arctan2(self.total_gravity_dy, self.total_gravity_dx)
+        self.total_gravity_magnitude = np.sqrt(self.total_gravity_dx**2 + self.total_gravity_dy**2)
+        sensor_data.append(self.total_gravity_angle)
+        sensor_data.append(self.total_gravity_magnitude)
 
         self.game.playerSensors[self.player_id] = sensor_data
 
@@ -269,7 +327,7 @@ class Player:
     def update_fitness(self):
         initial_distance = np.sqrt((self.game.start_point[0] - self.game.end_point[0])**2 + (self.game.start_point[1] - self.game.end_point[1])**2) * 0.9
         current_distance = np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2)
-        self.fitness += initial_distance / current_distance + self.fuel/self.game.init_fuel + (initial_distance / self.min_distance)/2
+        self.fitness += 2*(initial_distance / current_distance) + self.fuel/self.game.init_fuel + (initial_distance / self.min_distance)
         # print(f"player {self.player_id} fitness: {self.fitness}")
 
 

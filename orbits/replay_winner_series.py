@@ -3,10 +3,11 @@ import os
 
 frame_size_x = 720
 frame_size_y = 480
-num_planets = 0
+num_planets = 10
 
 for i in range(0, 100, 1):
     print(i)
-    if os.path.isfile(f"saves/{num_planets}_planets/winner_gen_{i}.pkl"):
-        print(f"Loading file /population_gen_{i}.pkl...")
-        play_game_with_winner(f"saves/{num_planets}_planets/winner_gen_{i}.pkl", num_planets, i, True)
+    saveFile = f"saves/{num_planets}_planets_{1000}_pop/winner_gen_{i}.pkl"
+    if os.path.isfile(saveFile):
+        print(f"Loading file /winner_gen_{i}.pkl...")
+        play_game_with_winner(saveFile, num_planets, i, True)

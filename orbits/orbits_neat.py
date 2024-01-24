@@ -8,21 +8,27 @@ frame_size_x = 720
 frame_size_y = 480
 # frame_size_x = 1280
 # frame_size_y = 720
-starting_fuel = 1000
+starting_fuel = 2500
 
 population_size = 1000
-num_planets = 0
-starting_generation = 0
+num_planets = 10
+starting_generation = 300
 ending_generation = 2000
 save_every = 100
 
 batch_size = 100
+
+save_file_dir = f"saves/{num_planets}_planets_{population_size}_pop"
+if not os.path.exists(save_file_dir):
+    os.makedirs(save_file_dir)
 
 if starting_generation == 0:
     previous_gen = 0
 else:
     save_file = f"saves/{num_planets}_planets_{population_size}_pop/winner_gen_{starting_generation}.pkl"
     previous_gen = int(save_file.split("_")[-1].split(".")[0])
+    print(f"Starting from generation {previous_gen}...")
+    print(f"Loading file {save_file}...")
 
 
 def eval_genomes(genomes, config):
@@ -32,6 +38,7 @@ def eval_genomes(genomes, config):
         genome_ids = [genome_id for genome_id, _ in group]
         for _ in range(3):  # Repeat each game 3 times
             game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids)
+            game.draw_bg()
             for genome_id, genome in group:
                 genome.fitness = 0
                 nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in group}
@@ -62,9 +69,9 @@ def run_neat(config_file, starting_generation=0, ending_generation=2000, save_ev
 
     for i in range(starting_generation, ending_generation, save_every):
         # Load the saved population state if it exists
-        if os.path.isfile(f"saves/{num_planets}_planets/population_gen_{i}.pkl"):
+        if os.path.isfile(f"saves/{num_planets}_planets_{population_size}_pop/population_gen_{i}.pkl"):
             print(f"Loading file /population_gen_{i}.pkl...")
-            with open(f"saves/{num_planets}_planets/population_gen_{i}.pkl", "rb") as f:
+            with open(f"saves/{num_planets}_planets_{population_size}_pop/population_gen_{i}.pkl", "rb") as f:
                 p = pickle.load(f)
         winner = p.run(eval_genomes, save_every)
         # Save the winner and the population state.
@@ -84,11 +91,11 @@ def update_config(num_planets):
     with open('neat-config.ini', 'r') as f:
         config_lines = f.readlines()
 
-    with open('neat-config.ini', 'w') as f:
+    with open(f'{save_file_dir}/neat-config.ini', 'w') as f:
         print(f"Updating config file with {num_planets} planets...")
         for line in config_lines:
             if line.startswith('num_inputs'):
-                f.write(f'num_inputs = {num_planets * 2 + 12}\n')
+                f.write(f'num_inputs = {11}\n')
             elif line.startswith('pop_size'):
                 f.write(f'pop_size = {population_size}\n')
             else:
@@ -96,11 +103,9 @@ def update_config(num_planets):
 
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'neat-config.ini')
-    if previous_gen < 10:
-        run_neat(config_path, 0, 10, 1)
+    config_path = os.path.join(local_dir, f'{save_file_dir}/neat-config.ini')
     if previous_gen < 100 :
-        run_neat(config_path, 10, 100, 10)
+        run_neat(config_path, previous_gen, 100, 10)
         run_neat(config_path, 100, 1000, 100)
     else:
         run_neat(config_path, previous_gen, 2000, 100)
