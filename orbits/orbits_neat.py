@@ -10,9 +10,10 @@ frame_size_y = 480
 # frame_size_y = 720
 starting_fuel = 2500
 
-population_size = 1000
-num_planets = 10
-starting_generation = 300
+population_size = 500
+num_games = 5
+num_planets = 3
+starting_generation = 0
 ending_generation = 2000
 save_every = 100
 
@@ -36,7 +37,7 @@ def eval_genomes(genomes, config):
     for i in tqdm.tqdm(range(0, len(genomes_list), batch_size)):
         group = genomes_list[i:i+batch_size]
         genome_ids = [genome_id for genome_id, _ in group]
-        for _ in range(3):  # Repeat each game 3 times
+        for _ in tqdm.tqdm(range(num_games)):  # Repeat each game 3 times
             game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids)
             game.draw_bg()
             for genome_id, genome in group:
@@ -95,7 +96,7 @@ def update_config(num_planets):
         print(f"Updating config file with {num_planets} planets...")
         for line in config_lines:
             if line.startswith('num_inputs'):
-                f.write(f'num_inputs = {11}\n')
+                f.write(f'num_inputs = {11 + num_planets*3}\n')
             elif line.startswith('pop_size'):
                 f.write(f'pop_size = {population_size}\n')
             else:

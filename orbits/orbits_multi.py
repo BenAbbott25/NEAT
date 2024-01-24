@@ -36,7 +36,7 @@ class Game:
         self.playerSensors = {}
         for player_id in players:
             self.players.append(Player(self, player_id, self.start_point[0], self.start_point[1], 5, 15, 15, fuel))
-            self.playerSensors[player_id] = np.zeros(11 + 2*num_planets*0)
+            self.playerSensors[player_id] = np.zeros(11 + 3*num_planets)
         self.planets = []
         for i in range(num_planets):
             planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
@@ -199,8 +199,6 @@ class Player:
         if self.inputVector.magnitude < 0:
             self.inputVector.magnitude = 0
         
-        self.fuel -= abs(self.inputVector.angle)
-        
         self.inputVector.update()
         self.movementVector.dx += self.inputVector.dx/1000
         self.movementVector.dy += self.inputVector.dy/1000
@@ -310,8 +308,13 @@ class Player:
             gravity = planet.mass / distance**2
             gravity_dx = gravity * dx / distance
             gravity_dy = gravity * dy / distance
+            gravity_angle = np.arctan2(gravity_dy, gravity_dx)
+            gravity_magnitude = np.sqrt(gravity_dx**2 + gravity_dy**2)
             self.total_gravity_dx += gravity_dx
             self.total_gravity_dy += gravity_dy
+            sensor_data.append(gravity_angle)
+            sensor_data.append(gravity_magnitude)
+            sensor_data.append(planet.mass/1800)
         self.total_gravity_angle = np.arctan2(self.total_gravity_dy, self.total_gravity_dx)
         self.total_gravity_magnitude = np.sqrt(self.total_gravity_dx**2 + self.total_gravity_dy**2)
         sensor_data.append(self.total_gravity_angle)
