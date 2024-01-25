@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 class Game:
-    def __init__(self, frames_x, frames_y, num_planets, fuel, players):
+    def __init__(self, frames_x, frames_y, num_planets, fuel, players, start_point, end_point, planets):
         self.frames_x = frames_x
         self.frames_y = frames_y
 
@@ -13,39 +13,43 @@ class Game:
 
         self.fitnesses = {}
 
-        # split into 4 quadrants and place start and end points in different quadrants
-        end_quadrant_x = np.random.randint(0,2)
-        end_quadrant_y = np.random.randint(0,2)
-        start_quadrant_x = np.random.randint(0,2)
-        start_quadrant_y = np.random.randint(0,2)
+        # # split into 4 quadrants and place start and end points in different quadrants
+        # end_quadrant_x = np.random.randint(0,2)
+        # end_quadrant_y = np.random.randint(0,2)
+        # start_quadrant_x = np.random.randint(0,2)
+        # start_quadrant_y = np.random.randint(0,2)
 
-        if end_quadrant_x == start_quadrant_x and end_quadrant_y == start_quadrant_y:
-            end_quadrant_x = 1 - end_quadrant_x
-            end_quadrant_y = 1 - end_quadrant_y
+        # if end_quadrant_x == start_quadrant_x and end_quadrant_y == start_quadrant_y:
+        #     end_quadrant_x = 1 - end_quadrant_x
+        #     end_quadrant_y = 1 - end_quadrant_y
 
-        self.quadrant_start_point = [np.random.randint(int(np.floor(frames_x*0.1/4)),int(np.ceil(frames_x*0.9/4))), np.random.randint(int(np.floor(frames_y*0.1/4)),int(np.ceil(frames_y*0.9/4)))]
-        self.quadrant_end_point = [np.random.randint(int(np.floor(frames_x*0.1/4)),int(np.ceil(frames_x*0.9/4))), np.random.randint(int(np.floor(frames_y*0.1/4)),int(np.ceil(frames_y*0.9/4)))]
+        # self.quadrant_start_point = [np.random.randint(int(np.floor(frames_x*0.1/4)),int(np.ceil(frames_x*0.9/4))), np.random.randint(int(np.floor(frames_y*0.1/4)),int(np.ceil(frames_y*0.9/4)))]
+        # self.quadrant_end_point = [np.random.randint(int(np.floor(frames_x*0.1/4)),int(np.ceil(frames_x*0.9/4))), np.random.randint(int(np.floor(frames_y*0.1/4)),int(np.ceil(frames_y*0.9/4)))]
 
-        self.start_point = [self.quadrant_start_point[0] + start_quadrant_x * frames_x/2, self.quadrant_start_point[1] + start_quadrant_y * frames_y/2]
-        self.end_point = [self.quadrant_end_point[0] + end_quadrant_x * frames_x/2, self.quadrant_end_point[1] + end_quadrant_y * frames_y/2]
+        # self.start_point = [self.quadrant_start_point[0] + start_quadrant_x * frames_x/2, self.quadrant_start_point[1] + start_quadrant_y * frames_y/2]
+        # self.end_point = [self.quadrant_end_point[0] + end_quadrant_x * frames_x/2, self.quadrant_end_point[1] + end_quadrant_y * frames_y/2]
 
-        # self.start_point = [frames_x/4, frames_y/2]
-        # self.end_point = [frames_x*3/4, frames_y/2]
+        # self.planets = []
+        # for i in range(num_planets):
+        #     planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
+        #     planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
+        #     while np.sqrt((planet_x - self.start_point[0])**2 + (planet_y - self.start_point[1])**2) < 100 or np.sqrt((planet_x - self.end_point[0])**2 + (planet_y - self.end_point[1])**2) < 100:
+        #         planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
+        #         planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
+        #     self.planets.append(Planet(planet_x, planet_y, np.random.randint(800,1800)))
 
+        self.start_point = start_point
+        self.end_point = end_point
+
+        self.planets = []
+        for planet in planets:
+            self.planets.append(Planet(planet[0], planet[1], planet[2]))
+        
         self.players = []
         self.playerSensors = {}
         for player_id in players:
             self.players.append(Player(self, player_id, self.start_point[0], self.start_point[1], 5, 15, 15, fuel))
             self.playerSensors[player_id] = np.zeros(11 + 3*num_planets)
-        self.planets = []
-        for i in range(num_planets):
-            planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
-            planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
-            while np.sqrt((planet_x - self.start_point[0])**2 + (planet_y - self.start_point[1])**2) < 100 or np.sqrt((planet_x - self.end_point[0])**2 + (planet_y - self.end_point[1])**2) < 100:
-                planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
-                planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
-            self.planets.append(Planet(planet_x, planet_y, np.random.randint(800,1800)))
-        # self.planets = [Planet(frames_x/2, frames_y*(i+0.5)/num_planets, 1000) for i in range(num_planets)]
 
         self.init_fuel = fuel
 
@@ -143,6 +147,7 @@ class Player:
         self.movementVector = Vector(0,0)
         self.inputVector = radVector(init_vector_angle,0)
         self.mass = mass
+        self.highest_thrust = 0
         self.max_speed = max_speed
         self.max_thrust = max_thrust
         self.fitness = 0
@@ -198,6 +203,8 @@ class Player:
             self.inputVector.magnitude = self.max_thrust
         if self.inputVector.magnitude < 0:
             self.inputVector.magnitude = 0
+
+        self.highest_thrust = max(self.highest_thrust, np.sqrt(self.inputVector.magnitude))
         
         self.inputVector.update()
         self.movementVector.dx += self.inputVector.dx/1000
@@ -330,7 +337,7 @@ class Player:
     def update_fitness(self):
         initial_distance = np.sqrt((self.game.start_point[0] - self.game.end_point[0])**2 + (self.game.start_point[1] - self.game.end_point[1])**2) * 0.9
         current_distance = np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2)
-        self.fitness += 2*(initial_distance / current_distance) + self.fuel/self.game.init_fuel + (initial_distance / self.min_distance)
+        self.fitness += 2*(initial_distance / current_distance) + self.fuel/self.game.init_fuel + (initial_distance / self.min_distance) + (self.highest_thrust / self.max_thrust)/2
         # print(f"player {self.player_id} fitness: {self.fitness}")
 
 

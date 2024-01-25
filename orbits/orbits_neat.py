@@ -3,17 +3,18 @@ import os
 import pickle
 import tqdm
 from orbits_multi import Game
+import numpy as np
 
 frame_size_x = 720
 frame_size_y = 480
 # frame_size_x = 1280
 # frame_size_y = 720
-starting_fuel = 2500
+starting_fuel = 1250
 
 population_size = 500
 num_games = 5
 num_planets = 3
-starting_generation = 0
+starting_generation = 200
 ending_generation = 2000
 save_every = 100
 
@@ -34,15 +35,16 @@ else:
 
 def eval_genomes(genomes, config):
     genomes_list = list(genomes)
-    for i in tqdm.tqdm(range(0, len(genomes_list), batch_size)):
-        group = genomes_list[i:i+batch_size]
-        genome_ids = [genome_id for genome_id, _ in group]
-        for _ in tqdm.tqdm(range(num_games)):  # Repeat each game 3 times
-            game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids)
+    for genome_id, genome in tqdm.tqdm(genomes_list, desc="Creating Networks"):
+        genome.fitness = 0
+        nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in genomes_list}
+    for n_game in tqdm.tqdm(range(num_games), desc="Games"):  # Repeat each game 3 times
+        start_point, end_point, planets = generate_coordinates(frame_size_x, frame_size_y)
+        for i in tqdm.tqdm(range(0, len(genomes_list), batch_size), desc=f"{n_game+1}/{num_games} Generation"):
+            group = genomes_list[i:i+batch_size]
+            genome_ids = [genome_id for genome_id, _ in group]
+            game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids, start_point, end_point, planets)
             game.draw_bg()
-            for genome_id, genome in group:
-                genome.fitness = 0
-                nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in group}
             playerInputs = {}
             while not game.is_game_over:
                 for genome_id, genome in group:
@@ -54,8 +56,8 @@ def eval_genomes(genomes, config):
             for genome_id, genome in group:
                 if genome_id in fitnesses:
                     genome.fitness += fitnesses[genome_id]  # Accumulate fitness over the 3 games
-        for genome_id, genome in group:
-            genome.fitness /= 3  # Average the fitness over the 3 games
+    for genome_id, genome in genomes_list:
+        genome.fitness /= num_games  # Average the fitness over the 3 games
 
 def run_neat(config_file, starting_generation=0, ending_generation=2000, save_every=100):
     update_config(num_planets)
@@ -102,10 +104,42 @@ def update_config(num_planets):
             else:
                 f.write(line)    
 
+
+
+def generate_coordinates(frames_x, frames_y):
+    # split into 4 quadrants and place start and end points in different quadrants
+    end_quadrant_x = np.random.randint(0,2)
+    end_quadrant_y = np.random.randint(0,2)
+    start_quadrant_x = np.random.randint(0,2)
+    start_quadrant_y = np.random.randint(0,2)
+
+    if end_quadrant_x == start_quadrant_x and end_quadrant_y == start_quadrant_y:
+        end_quadrant_x = 1 - end_quadrant_x
+        end_quadrant_y = 1 - end_quadrant_y
+
+    quadrant_start_point = [np.random.randint(int(np.floor(frames_x*0.1/4)),int(np.ceil(frames_x*0.9/4))), np.random.randint(int(np.floor(frames_y*0.1/4)),int(np.ceil(frames_y*0.9/4)))]
+    quadrant_end_point = [np.random.randint(int(np.floor(frames_x*0.1/4)),int(np.ceil(frames_x*0.9/4))), np.random.randint(int(np.floor(frames_y*0.1/4)),int(np.ceil(frames_y*0.9/4)))]
+
+    start_point = [quadrant_start_point[0] + start_quadrant_x * frames_x/2, quadrant_start_point[1] + start_quadrant_y * frames_y/2]
+    end_point = [quadrant_end_point[0] + end_quadrant_x * frames_x/2, quadrant_end_point[1] + end_quadrant_y * frames_y/2]
+
+    planets = []
+    for i in range(num_planets):
+        planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
+        planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
+        while np.sqrt((planet_x - start_point[0])**2 + (planet_y - start_point[1])**2) < 100 or np.sqrt((planet_x - end_point[0])**2 + (planet_y - end_point[1])**2) < 100:
+            planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
+            planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
+        mass = np.random.randint(800, 1800)
+        planets.append([planet_x, planet_y, mass])
+
+    return start_point, end_point, planets
+    
+
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, f'{save_file_dir}/neat-config.ini')
-    if previous_gen < 100 :
+    if previous_gen < 100:
         run_neat(config_path, previous_gen, 100, 10)
         run_neat(config_path, 100, 1000, 100)
     else:
