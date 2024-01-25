@@ -5,16 +5,16 @@ import tqdm
 from orbits_multi import Game
 import numpy as np
 
-frame_size_x = 720
-frame_size_y = 480
-# frame_size_x = 1280
-# frame_size_y = 720
+# frame_size_x = 720
+# frame_size_y = 480
+frame_size_x = 1280
+frame_size_y = 720
 starting_fuel = 1250
 
 population_size = 500
 num_games = 5
-num_planets = 3
-starting_generation = 200
+num_planets = 5
+starting_generation = 10
 ending_generation = 2000
 save_every = 100
 
@@ -38,9 +38,10 @@ def eval_genomes(genomes, config):
     for genome_id, genome in tqdm.tqdm(genomes_list, desc="Creating Networks"):
         genome.fitness = 0
         nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in genomes_list}
-    for n_game in tqdm.tqdm(range(num_games), desc="Games"):  # Repeat each game 3 times
+    genomes_list.sort(key=lambda x: x[1].fitness)
+    for n_game in tqdm.tqdm(range(num_games), desc="Generation"):  # Repeat each game 3 times
         start_point, end_point, planets = generate_coordinates(frame_size_x, frame_size_y)
-        for i in tqdm.tqdm(range(0, len(genomes_list), batch_size), desc=f"{n_game+1}/{num_games} Generation"):
+        for i in tqdm.tqdm(range(0, len(genomes_list), batch_size), desc=f"{n_game+1}/{num_games} Games"):
             group = genomes_list[i:i+batch_size]
             genome_ids = [genome_id for genome_id, _ in group]
             game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids, start_point, end_point, planets)

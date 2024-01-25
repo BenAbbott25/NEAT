@@ -147,7 +147,7 @@ class Player:
         self.movementVector = Vector(0,0)
         self.inputVector = radVector(init_vector_angle,0)
         self.mass = mass
-        self.highest_thrust = 0
+        self.fastest_speed = 0
         self.max_speed = max_speed
         self.max_thrust = max_thrust
         self.fitness = 0
@@ -203,12 +203,12 @@ class Player:
             self.inputVector.magnitude = self.max_thrust
         if self.inputVector.magnitude < 0:
             self.inputVector.magnitude = 0
-
-        self.highest_thrust = max(self.highest_thrust, np.sqrt(self.inputVector.magnitude))
         
         self.inputVector.update()
         self.movementVector.dx += self.inputVector.dx/1000
         self.movementVector.dy += self.inputVector.dy/1000
+
+        self.fastest_speed = max(self.fastest_speed, np.sqrt(self.movementVector.dx**2 + self.movementVector.dy**2))
 
 
     def accelerate(self, ddx, ddy):
@@ -337,7 +337,7 @@ class Player:
     def update_fitness(self):
         initial_distance = np.sqrt((self.game.start_point[0] - self.game.end_point[0])**2 + (self.game.start_point[1] - self.game.end_point[1])**2) * 0.9
         current_distance = np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2)
-        self.fitness += 2*(initial_distance / current_distance) + self.fuel/self.game.init_fuel + (initial_distance / self.min_distance) + (self.highest_thrust / self.max_thrust)/2
+        self.fitness += 5*(initial_distance / current_distance) + self.fuel/self.game.init_fuel + (initial_distance / self.min_distance) + (self.fastest_speed / self.max_speed)
         # print(f"player {self.player_id} fitness: {self.fitness}")
 
 
