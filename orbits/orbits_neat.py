@@ -5,16 +5,16 @@ import tqdm
 from orbits_multi import Game
 import numpy as np
 
-# frame_size_x = 720
-# frame_size_y = 480
-frame_size_x = 1280
-frame_size_y = 720
+frame_size_x = 720
+frame_size_y = 480
+# frame_size_x = 1280
+# frame_size_y = 720
 starting_fuel = 1250
 
 population_size = 500
 num_games = 5
-num_planets = 5
-starting_generation = 10
+num_planets = 6
+starting_generation = 1700
 ending_generation = 2000
 save_every = 100
 
@@ -24,16 +24,33 @@ save_file_dir = f"saves/{num_planets}_planets_{population_size}_pop"
 if not os.path.exists(save_file_dir):
     os.makedirs(save_file_dir)
 
+params = {
+    "frame_size_x": frame_size_x,
+    "frame_size_y": frame_size_y,
+    "starting_fuel": starting_fuel,
+    "population_size": population_size,
+    "num_games": num_games,
+    "num_planets": num_planets,
+    "starting_generation": starting_generation,
+    "ending_generation": ending_generation,
+    "save_every": save_every,
+    "batch_size": batch_size,
+}
+
+params_file = os.path.join(save_file_dir, "params.pkl")
+with open(params_file, "wb") as f:
+    pickle.dump(params, f)
+
+
 if starting_generation == 0:
     previous_gen = 0
 else:
     save_file = f"saves/{num_planets}_planets_{population_size}_pop/winner_gen_{starting_generation}.pkl"
     previous_gen = int(save_file.split("_")[-1].split(".")[0])
-    print(f"Starting from generation {previous_gen}...")
-    print(f"Loading file {save_file}...")
+    # print(f"Starting from generation {previous_gen}...")
+    # print(f"Loading file {save_file}...")
 
-
-def eval_genomes(genomes, config):
+def eval_genomes(genomes, config, generation):
     genomes_list = list(genomes)
     for genome_id, genome in tqdm.tqdm(genomes_list, desc="Creating Networks"):
         genome.fitness = 0
@@ -44,8 +61,8 @@ def eval_genomes(genomes, config):
         for i in tqdm.tqdm(range(0, len(genomes_list), batch_size), desc=f"{n_game+1}/{num_games} Games"):
             group = genomes_list[i:i+batch_size]
             genome_ids = [genome_id for genome_id, _ in group]
-            game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids, start_point, end_point, planets)
-            game.draw_bg()
+            game = Game(frame_size_x, frame_size_y, num_planets, starting_fuel, genome_ids, start_point, end_point, planets, max((100-generation), 0), [generation])
+            # game.draw_bg()  # Slow not good for training
             playerInputs = {}
             while not game.is_game_over:
                 for genome_id, genome in group:
@@ -77,7 +94,7 @@ def run_neat(config_file, starting_generation=0, ending_generation=2000, save_ev
             print(f"Loading file /population_gen_{i}.pkl...")
             with open(f"saves/{num_planets}_planets_{population_size}_pop/population_gen_{i}.pkl", "rb") as f:
                 p = pickle.load(f)
-        winner = p.run(eval_genomes, save_every)
+        winner = p.run(lambda genomes, config: eval_genomes(genomes, config, i), save_every)
         # Save the winner and the population state.
         print(f"Saving winner and population of generation {i+save_every}...")
         save_dir = f"saves/{num_planets}_planets_{population_size}_pop"

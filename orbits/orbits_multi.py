@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 class Game:
-    def __init__(self, frames_x, frames_y, num_planets, fuel, players, start_point, end_point, planets):
+    def __init__(self, frames_x, frames_y, num_planets, fuel, players, start_point, end_point, planets, catchment_range, gen_list):
         self.frames_x = frames_x
         self.frames_y = frames_y
 
@@ -12,31 +12,7 @@ class Game:
         self.end_all = False
 
         self.fitnesses = {}
-
-        # # split into 4 quadrants and place start and end points in different quadrants
-        # end_quadrant_x = np.random.randint(0,2)
-        # end_quadrant_y = np.random.randint(0,2)
-        # start_quadrant_x = np.random.randint(0,2)
-        # start_quadrant_y = np.random.randint(0,2)
-
-        # if end_quadrant_x == start_quadrant_x and end_quadrant_y == start_quadrant_y:
-        #     end_quadrant_x = 1 - end_quadrant_x
-        #     end_quadrant_y = 1 - end_quadrant_y
-
-        # self.quadrant_start_point = [np.random.randint(int(np.floor(frames_x*0.1/4)),int(np.ceil(frames_x*0.9/4))), np.random.randint(int(np.floor(frames_y*0.1/4)),int(np.ceil(frames_y*0.9/4)))]
-        # self.quadrant_end_point = [np.random.randint(int(np.floor(frames_x*0.1/4)),int(np.ceil(frames_x*0.9/4))), np.random.randint(int(np.floor(frames_y*0.1/4)),int(np.ceil(frames_y*0.9/4)))]
-
-        # self.start_point = [self.quadrant_start_point[0] + start_quadrant_x * frames_x/2, self.quadrant_start_point[1] + start_quadrant_y * frames_y/2]
-        # self.end_point = [self.quadrant_end_point[0] + end_quadrant_x * frames_x/2, self.quadrant_end_point[1] + end_quadrant_y * frames_y/2]
-
-        # self.planets = []
-        # for i in range(num_planets):
-        #     planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
-        #     planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
-        #     while np.sqrt((planet_x - self.start_point[0])**2 + (planet_y - self.start_point[1])**2) < 100 or np.sqrt((planet_x - self.end_point[0])**2 + (planet_y - self.end_point[1])**2) < 100:
-        #         planet_x = np.random.randint(int(np.floor(frames_x*0.1)),int(np.ceil(frames_x*0.9)))
-        #         planet_y = np.random.randint(int(np.floor(frames_y*0.1)),int(np.ceil(frames_y*0.9)))
-        #     self.planets.append(Planet(planet_x, planet_y, np.random.randint(800,1800)))
+        self.catchment_range = catchment_range
 
         self.start_point = start_point
         self.end_point = end_point
@@ -52,6 +28,13 @@ class Game:
             self.playerSensors[player_id] = np.zeros(11 + 3*num_planets)
 
         self.init_fuel = fuel
+
+        if len(gen_list) > 1:
+            self.gen_list = gen_list = ', '.join([str(gen) for gen in gen_list])
+            pygame.display.set_caption(f"Generations {self.gen_list}")
+        else:
+            self.gen_list = gen_list = gen_list[0]
+            pygame.display.set_caption(f"Generation {self.gen_list}")
 
         self.screen = pygame.display.set_mode((frames_x, frames_y))
         pygame.init()
@@ -99,6 +82,7 @@ class Game:
 
         pygame.draw.circle(self.screen, (0, 255, 0), (self.start_point[0], self.start_point[1]), 5)
         pygame.draw.circle(self.screen, (255, 0, 0), (self.end_point[0], self.end_point[1]), 5)
+        pygame.draw.circle(self.screen, (255, 0, 0), (self.end_point[0], self.end_point[1]), max(self.catchment_range,0)+5, 1)
         pygame.display.flip()
 
     def update(self):
@@ -111,6 +95,10 @@ class Game:
             player.update_min_distance()
             player.fuel -= player.inputVector.magnitude / player.max_thrust
             player.fuel -= 1
+
+        for planet in self.planets:
+            planet.check_gravity()
+            planet.move()
 
     def run(self, playerInputs):
         for player in self.players:
@@ -132,6 +120,10 @@ class Game:
 
     def game_over(self):
         self.is_game_over = True
+
+    def setTitle(self, title):
+        print(title)
+        pygame.display.set_caption(title)
 
 class Player:
     def __init__(self, game, id, init_x, init_y, mass, max_speed, max_thrust, fuel=10000):
@@ -237,7 +229,7 @@ class Player:
             if np.sqrt((self.x - planet.x)**2 + (self.y - planet.y)**2) < self.mass + planet.mass/100:
                 self.fitness -= 10 * self.fuel/self.game.init_fuel
                 self.remove()
-        if np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2) < self.mass + 5:
+        if np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2) < self.mass + 5 + self.game.catchment_range:
             self.fitness += 10 * self.fuel/self.game.init_fuel
             self.remove()
         if self.x == 0 or self.x == self.game.frames_x or self.y == 0 or self.y == self.game.frames_y:
@@ -350,6 +342,40 @@ class Planet:
     def draw(self, screen):
         pygame.draw.circle(screen, (255, 255, 255), (self.x, self.y), self.mass/100)
 
+    def accelerate(self, ddx, ddy):
+        self.movementVector.dx += ddx / self.mass
+        self.movementVector.dy += ddy / self.mass
+        if self.movementVector.dx ** 2 + self.movementVector.dy ** 2 > self.max_speed ** 2:
+            self.movementVector.dx *= self.max_speed / np.sqrt(self.movementVector.dx ** 2 + self.movementVector.dy ** 2)
+            self.movementVector.dy *= self.max_speed / np.sqrt(self.movementVector.dx ** 2 + self.movementVector.dy ** 2)
+
+    def move(self):
+        self.x += self.movementVector.dx
+        self.y += self.movementVector.dy
+
+        if self.x < 0:
+            self.x = 0
+        if self.x > self.game.frames_x:
+            self.x = self.game.frames_x
+        if self.y < 0:
+            self.y = 0
+        if self.y > self.game.frames_y:
+            self.y = self.game.frames_y
+
+    def check_gravity(self):
+        total_gravity_dx = 0
+        total_gravity_dy = 0
+        for planet in self.game.planets:
+            dx = planet.x - self.x
+            dy = planet.y - self.y
+            distance = np.sqrt(dx**2 + dy**2)
+            gravity = planet.mass / distance**2
+            gravity_dx = gravity * dx / distance
+            gravity_dy = gravity * dy / distance
+            total_gravity_dx += gravity_dx / 10
+            total_gravity_dy += gravity_dy / 10
+        self.accelerate(total_gravity_dx, total_gravity_dy)
+
 
 class Vector:
     def __init__(self, init_dx, init_dy):
@@ -367,4 +393,5 @@ class radVector:
     def update(self):
         self.dx = self.magnitude * np.cos(self.angle)
         self.dy = self.magnitude * np.sin(self.angle)
+
 
