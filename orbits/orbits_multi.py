@@ -96,10 +96,6 @@ class Game:
             player.fuel -= player.inputVector.magnitude / player.max_thrust
             player.fuel -= 1
 
-        for planet in self.planets:
-            planet.check_gravity()
-            planet.move()
-
     def run(self, playerInputs):
         for player in self.players:
             inputs = playerInputs[player.player_id]
@@ -342,40 +338,6 @@ class Planet:
     def draw(self, screen):
         pygame.draw.circle(screen, (255, 255, 255), (self.x, self.y), self.mass/100)
 
-    def accelerate(self, ddx, ddy):
-        self.movementVector.dx += ddx / self.mass
-        self.movementVector.dy += ddy / self.mass
-        if self.movementVector.dx ** 2 + self.movementVector.dy ** 2 > self.max_speed ** 2:
-            self.movementVector.dx *= self.max_speed / np.sqrt(self.movementVector.dx ** 2 + self.movementVector.dy ** 2)
-            self.movementVector.dy *= self.max_speed / np.sqrt(self.movementVector.dx ** 2 + self.movementVector.dy ** 2)
-
-    def move(self):
-        self.x += self.movementVector.dx
-        self.y += self.movementVector.dy
-
-        if self.x < 0:
-            self.x = 0
-        if self.x > self.game.frames_x:
-            self.x = self.game.frames_x
-        if self.y < 0:
-            self.y = 0
-        if self.y > self.game.frames_y:
-            self.y = self.game.frames_y
-
-    def check_gravity(self):
-        total_gravity_dx = 0
-        total_gravity_dy = 0
-        for planet in self.game.planets:
-            dx = planet.x - self.x
-            dy = planet.y - self.y
-            distance = np.sqrt(dx**2 + dy**2)
-            gravity = planet.mass / distance**2
-            gravity_dx = gravity * dx / distance
-            gravity_dy = gravity * dy / distance
-            total_gravity_dx += gravity_dx / 10
-            total_gravity_dy += gravity_dy / 10
-        self.accelerate(total_gravity_dx, total_gravity_dy)
-
 
 class Vector:
     def __init__(self, init_dx, init_dy):
@@ -393,5 +355,4 @@ class radVector:
     def update(self):
         self.dx = self.magnitude * np.cos(self.angle)
         self.dy = self.magnitude * np.sin(self.angle)
-
 
