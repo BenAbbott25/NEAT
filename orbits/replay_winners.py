@@ -62,5 +62,5 @@ def play_game_with_winners(winner_files, num_planets, show_score=False):
                 game.run(playerInputs)
 
 if __name__ == "__main__":
-    winner_files = [f"{file_dir}/winner_gen_{i}.pkl" for i in range(0, 2000, 1) if os.path.isfile(f"{file_dir}/winner_gen_{i}.pkl")]
+    winner_files = [f"{file_dir}/winner_gen_{i}.pkl" for i in range(0, 3000, 1) if os.path.isfile(f"{file_dir}/winner_gen_{i}.pkl")]
     play_game_with_winners(winner_files, num_planets)
