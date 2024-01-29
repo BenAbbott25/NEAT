@@ -14,7 +14,7 @@ starting_fuel = 1250
 population_size = 500
 num_games = 5
 num_planets = 6
-starting_generation = 1700
+starting_generation = 1800
 ending_generation = 2000
 save_every = 100
 
@@ -161,4 +161,4 @@ if __name__ == '__main__':
         run_neat(config_path, previous_gen, 100, 10)
         run_neat(config_path, 100, 1000, 100)
     else:
-        run_neat(config_path, previous_gen, 2000, 100)
+        run_neat(config_path, previous_gen, 3000, 100)
