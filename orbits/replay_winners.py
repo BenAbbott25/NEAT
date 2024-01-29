@@ -2,7 +2,7 @@ import pickle
 import neat
 import os
 from orbits_multi import Game
-from orbits_neat import generate_coordinates
+from orbits_neat import generate_coordinates, generate_coordinates_gauss
 import numpy as np
 
 # frame_size_x = 720
@@ -40,17 +40,7 @@ def play_game_with_winners(winner_files, num_planets, show_score=False):
 
     for _ in range(3):
         # start_point, end_point, planets = generate_coordinates(frame_size_x, frame_size_y)
-        start_point = [frame_size_x / 5, frame_size_y / 2]
-        end_point = [frame_size_x * 4 / 5, frame_size_y / 2]
-        planets = []
-        for i in range(num_planets):
-            planet_x = np.random.normal(loc=frame_size_x/2, scale=frame_size_x/6)
-            planet_y = np.random.normal(loc=frame_size_y/2, scale=frame_size_y/6)
-            while np.sqrt((planet_x - start_point[0])**2 + (planet_y - start_point[1])**2) < 100 or np.sqrt((planet_x - end_point[0])**2 + (planet_y - end_point[1])**2) < 100:
-                planet_x = np.random.normal(loc=frame_size_x/2, scale=frame_size_x/6)
-                planet_y = np.random.normal(loc=frame_size_y/2, scale=frame_size_y/6)
-            mass = np.random.randint(800, 1800)
-            planets.append([planet_x, planet_y, mass])
+        start_point, end_point, planets = generate_coordinates_gauss(frame_size_x, frame_size_y)
 
         batch_size = 3
         for i in range(0, len(genomes), batch_size):

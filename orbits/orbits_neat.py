@@ -14,8 +14,8 @@ starting_fuel = 1250
 population_size = 500
 num_games = 5
 num_planets = 6
-starting_generation = 1800
-ending_generation = 2000
+starting_generation = 1900
+ending_generation = 3000
 save_every = 100
 
 batch_size = 100
@@ -57,7 +57,8 @@ def eval_genomes(genomes, config, generation):
         nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in genomes_list}
     genomes_list.sort(key=lambda x: x[1].fitness)
     for n_game in tqdm.tqdm(range(num_games), desc="Generation"):  # Repeat each game 3 times
-        start_point, end_point, planets = generate_coordinates(frame_size_x, frame_size_y)
+        # start_point, end_point, planets = generate_coordinates(frame_size_x, frame_size_y)
+        start_point, end_point, planets = generate_coordinates_gauss(frame_size_x, frame_size_y)
         for i in tqdm.tqdm(range(0, len(genomes_list), batch_size), desc=f"{n_game+1}/{num_games} Games"):
             group = genomes_list[i:i+batch_size]
             genome_ids = [genome_id for genome_id, _ in group]
@@ -100,9 +101,9 @@ def run_neat(config_file, starting_generation=0, ending_generation=2000, save_ev
         save_dir = f"saves/{num_planets}_planets_{population_size}_pop"
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        with open(f"saves/{num_planets}_planets_{population_size}_pop/winner_gen_{i+save_every}.pkl", "wb") as f:
+        with open(f"saves/{num_planets}_planets_{population_size}_pop/winner_gen_{i+save_every}_gauss.pkl", "wb") as f:
             pickle.dump(winner, f)
-        with open(f"saves/{num_planets}_planets_{population_size}_pop/population_gen_{i+save_every}.pkl", "wb") as f:
+        with open(f"saves/{num_planets}_planets_{population_size}_pop/population_gen_{i+save_every}_gauss.pkl", "wb") as f:
             pickle.dump(p, f)
 
     print("Winner's genome saved to winner.pkl")
@@ -153,6 +154,27 @@ def generate_coordinates(frames_x, frames_y):
 
     return start_point, end_point, planets
     
+def generate_coordinates_gauss(frames_x, frames_y):
+    start_point = [frames_x / 5, frames_y / 2]
+    end_point = [frames_x * 4 / 5, frames_y / 2]
+    planets = []
+    for i in range(num_planets):
+        planet_x = np.random.normal(loc=frames_x/2, scale=frames_x/6)
+        planet_y = np.random.normal(loc=frames_y/2, scale=frames_y/6)
+        while np.sqrt((planet_x - start_point[0])**2 + (planet_y - start_point[1])**2) < 100 or np.sqrt((planet_x - end_point[0])**2 + (planet_y - end_point[1])**2) < 100:
+            planet_x = np.random.normal(loc=frames_x/2, scale=frames_x/6)
+            planet_y = np.random.normal(loc=frames_y/2, scale=frames_y/6)
+        mass = np.random.randint(800, 1800)
+        planets.append([planet_x, planet_y, mass])
+    
+    for i in range(len(planets)):
+        for j in range(i+1, len(planets)):
+            while np.sqrt((planets[i][0] - planets[j][0])**2 + (planets[i][1] - planets[j][1])**2) < 50:
+                planets[i][0] = np.random.normal(loc=frames_x/2, scale=frames_x/6)
+                planets[i][1] = np.random.normal(loc=frames_y/2, scale=frames_y/6)
+
+    return start_point, end_point, planets
+
 
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
@@ -161,4 +183,4 @@ if __name__ == '__main__':
         run_neat(config_path, previous_gen, 100, 10)
         run_neat(config_path, 100, 1000, 100)
     else:
-        run_neat(config_path, previous_gen, 3000, 100)
+        run_neat(config_path, previous_gen, ending_generation, 100)
