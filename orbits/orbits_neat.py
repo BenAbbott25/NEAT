@@ -13,9 +13,9 @@ starting_fuel = 1250
 
 population_size = 500
 num_games = 5
-num_planets = 3
-starting_generation = 1900
-ending_generation = 3000
+num_planets = 6
+starting_generation = 2700
+ending_generation = 5000
 save_every = 100
 
 batch_size = 100
@@ -57,8 +57,8 @@ def eval_genomes(genomes, config, generation):
         nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in genomes_list}
     genomes_list.sort(key=lambda x: x[1].fitness)
     for n_game in tqdm.tqdm(range(num_games), desc="Generation"):  # Repeat each game 3 times
-        # start_point, end_point, planets = generate_coordinates(frame_size_x, frame_size_y)
-        start_point, end_point, planets = generate_coordinates_gauss(frame_size_x, frame_size_y)
+        start_point, end_point, planets = generate_coordinates(frame_size_x, frame_size_y)
+        # start_point, end_point, planets = generate_coordinates_gauss(frame_size_x, frame_size_y)
         for i in tqdm.tqdm(range(0, len(genomes_list), batch_size), desc=f"{n_game+1}/{num_games} Games"):
             group = genomes_list[i:i+batch_size]
             genome_ids = [genome_id for genome_id, _ in group]
@@ -101,9 +101,9 @@ def run_neat(config_file, starting_generation=0, ending_generation=2000, save_ev
         save_dir = f"saves/{num_planets}_planets_{population_size}_pop"
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        with open(f"saves/{num_planets}_planets_{population_size}_pop/winner_gen_{i+save_every}_gauss.pkl", "wb") as f:
+        with open(f"saves/{num_planets}_planets_{population_size}_pop/winner_gen_{i+save_every}.pkl", "wb") as f:
             pickle.dump(winner, f)
-        with open(f"saves/{num_planets}_planets_{population_size}_pop/population_gen_{i+save_every}_gauss.pkl", "wb") as f:
+        with open(f"saves/{num_planets}_planets_{population_size}_pop/population_gen_{i+save_every}.pkl", "wb") as f:
             pickle.dump(p, f)
 
     print("Winner's genome saved to winner.pkl")

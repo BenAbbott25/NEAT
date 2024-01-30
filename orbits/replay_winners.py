@@ -39,10 +39,10 @@ def play_game_with_winners(winner_files, num_planets, show_score=False):
             nets.append(net)
 
     for _ in range(3):
-        # start_point, end_point, planets = generate_coordinates(frame_size_x, frame_size_y)
-        start_point, end_point, planets = generate_coordinates_gauss(frame_size_x, frame_size_y)
+        start_point, end_point, planets = generate_coordinates(frame_size_x, frame_size_y)
+        # start_point, end_point, planets = generate_coordinates_gauss(frame_size_x, frame_size_y)
 
-        batch_size = 3
+        batch_size = 5
         for i in range(0, len(genomes), batch_size):
             batch_genomes = genomes[i:i+batch_size]
             batch_nets = nets[i:i+batch_size]
