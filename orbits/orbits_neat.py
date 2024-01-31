@@ -14,7 +14,7 @@ starting_fuel = 1250
 population_size = 500
 num_games = 5
 num_planets = 6
-starting_generation = 2700
+starting_generation = 3300
 ending_generation = 5000
 save_every = 100
 
