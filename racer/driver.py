@@ -1,207 +1,130 @@
-class Player:
-    def __init__(self, game, id, init_x, init_y, mass, max_speed, max_thrust, fuel=10000):
-        self.player_id = id
-        self.x = init_x
-        self.y = init_y
+import numpy as np
+import pygame
+
+class Driver:
+    def __init__(self, game, x, y, angle, checkpoint, max_speed=200, max_steering=1):
         self.game = game
-        # dx = self.game.end_point[0] - self.x
-        # dy = self.game.end_point[1] - self.y
-        dx = self.game.frames_x/2 - self.x
-        dy = self.game.frames_y/2 - self.y
-        init_vector_angle = np.arctan2(dy, dx)
-        self.movementVector = Vector(0,0)
-        self.inputVector = radVector(init_vector_angle,0)
-        self.mass = mass
-        self.fastest_speed = 0
+        self.x = x
+        self.y = y
+        self.angle = angle
+        self.checkpoint = checkpoint
+        self.speed = 0
+        self.steering = 0
         self.max_speed = max_speed
-        self.max_thrust = max_thrust
-        self.fitness = 0
-        self.fuel = fuel
-        self.total_gravity_angle = 0
-        self.total_gravity_magnitude = 0
-        self.min_distance = np.sqrt((self.game.start_point[0] - self.game.end_point[0])**2 + (self.game.start_point[1] - self.game.end_point[1])**2)
+        self.max_steering = max_steering
+        self.color = (255, 255, 255)
+        self.time_since_last_checkpoint = 0
+        self.max_time_since_last_checkpoint = 1000
+
+        self.update_corners()
+
+    def update_corners(self):
+        self.front_left = (self.x + np.cos(self.angle + np.pi/6)*10, self.y + np.sin(self.angle + np.pi/6)*10)
+        self.front_right = (self.x + np.cos(self.angle - np.pi/6)*10, self.y + np.sin(self.angle - np.pi/6)*10)
+        self.back_left = (self.x + np.cos(self.angle + np.pi + np.pi/6)*10, self.y + np.sin(self.angle + np.pi + np.pi/6)*10)
+        self.back_right = (self.x + np.cos(self.angle + np.pi - np.pi/6)*10, self.y + np.sin(self.angle + np.pi - np.pi/6)*10)
+
+    def update(self):
+        self.update_corners()
+        self.move()
+        self.check_next_checkpoint()
+        self.check_collision()
+        if self.time_since_last_checkpoint > self.max_time_since_last_checkpoint:
+            self.color = (255, 255, 0)
+            self.crash()
+        self.time_since_last_checkpoint += 1
 
     def draw(self, screen):
-        pygame.draw.circle(screen, (255, 255, 255), (self.x, self.y), self.mass)
-        self.draw_vector(screen)
-        self.draw_fuel(screen)
-    
-    def draw_vector(self, screen):
-        # convert to radians and magnitude
-        vector_magnitude = np.sqrt(self.movementVector.dx ** 2 + self.movementVector.dy ** 2)
-        if vector_magnitude > 0:
-            vector_angle = np.arctan2(self.movementVector.dy, self.movementVector.dx)
-            start_x = self.x + 15 * np.cos(vector_angle)
-            start_y = self.y + 15 * np.sin(vector_angle)
-            end_x = self.x + (vector_magnitude + 1.5) * np.cos(vector_angle) * 10
-            end_y = self.y + (vector_magnitude + 1.5) * np.sin(vector_angle) * 10
-            pygame.draw.line(screen, (255, 255, 255), (start_x, start_y), (end_x, end_y))
-
-
-        self.inputVector.update()
-        start_x = self.x + 15 * np.cos(self.inputVector.angle)
-        start_y = self.y + 15 * np.sin(self.inputVector.angle)
-        end_x = self.x + (self.inputVector.magnitude + 15) * np.cos(self.inputVector.angle)
-        end_y = self.y + (self.inputVector.magnitude + 15) * np.sin(self.inputVector.angle)
-        pygame.draw.line(screen, (255, 255, 0), (start_x, start_y), (end_x, end_y))
-
-        # gravity vector in blue
-        start_x = self.x + 15 * np.cos(self.total_gravity_angle)
-        start_y = self.y + 15 * np.sin(self.total_gravity_angle)
-        end_x = self.x + min((100*self.total_gravity_magnitude) + 15, 50) * np.cos(self.total_gravity_angle)
-        end_y = self.y + min((100*self.total_gravity_magnitude) + 15, 50) * np.sin(self.total_gravity_angle)
-        pygame.draw.line(screen, (0, 0, 255), (start_x, start_y), (end_x, end_y))
-
-
-    def draw_fuel(self, screen):
-        fuel_percentage = self.fuel / self.game.init_fuel
-        pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(0, 0, self.game.frames_x, 5))
-        pygame.draw.rect(screen, (0, 255, 0), pygame.Rect(0, 0, self.game.frames_x * fuel_percentage, 5))
-
-    def handle_input(self, inputs):
-        angle_input = inputs[0]
-        thrust_input = inputs[1]
-
-        self.inputVector.angle += max(min(angle_input, 0.2), -0.2)
-        self.inputVector.magnitude += max(min(thrust_input, 1), -1)
-        if self.inputVector.magnitude > self.max_thrust:
-            self.inputVector.magnitude = self.max_thrust
-        if self.inputVector.magnitude < 0:
-            self.inputVector.magnitude = 0
-        
-        self.inputVector.update()
-        self.movementVector.dx += self.inputVector.dx/1000
-        self.movementVector.dy += self.inputVector.dy/1000
-
-        self.fastest_speed = max(self.fastest_speed, np.sqrt(self.movementVector.dx**2 + self.movementVector.dy**2))
-
-
-    def accelerate(self, ddx, ddy):
-        self.movementVector.dx += ddx / self.mass
-        self.movementVector.dy += ddy / self.mass
-        if self.movementVector.dx ** 2 + self.movementVector.dy ** 2 > self.max_speed ** 2:
-            self.movementVector.dx *= self.max_speed / np.sqrt(self.movementVector.dx ** 2 + self.movementVector.dy ** 2)
-            self.movementVector.dy *= self.max_speed / np.sqrt(self.movementVector.dx ** 2 + self.movementVector.dy ** 2)
+        pygame.draw.polygon(screen, self.color, [self.front_left, self.front_right, self.back_left, self.back_right])
 
     def move(self):
-        self.x += self.movementVector.dx
-        self.y += self.movementVector.dy
+        dx = np.cos(self.angle) * self.speed
+        dy = np.sin(self.angle) * self.speed
+        self.x += dx
+        self.y += dy
+        if self.speed > 0.1:
+            self.angle += self.steering/100
+        self.speed *= 0.995
+        self.steering *= 0.95
+        self.update_corners()
 
-        if self.x < 0:
-            self.x = 0
-        if self.x > self.game.frames_x:
-            self.x = self.game.frames_x
-        if self.y < 0:
-            self.y = 0
-        if self.y > self.game.frames_y:
-            self.y = self.game.frames_y
+    def accelerate(self, acceleration):
+        self.speed += acceleration
+        self.speed = max(0, min(self.speed, self.max_speed))
 
+    def turn(self, dtheta):
+        self.steering += dtheta
+        self.steering = max(-self.max_steering, min(self.steering, self.max_steering))
 
-    def check_collision(self):
-        for planet in self.game.planets:
-            if np.sqrt((self.x - planet.x)**2 + (self.y - planet.y)**2) < self.mass + planet.mass/100:
-                self.fitness -= 10 * self.fuel/self.game.init_fuel
-                self.remove()
-        if np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2) < self.mass + 5 + self.game.catchment_range:
-            self.fitness += 10 * self.fuel/self.game.init_fuel
-            self.remove()
-        if self.x == 0 or self.x == self.game.frames_x or self.y == 0 or self.y == self.game.frames_y:
-            self.fuel -= 10
+    def crash(self):
+        self.speed = 0
+        self.steering = 0
 
-    def check_gravity(self):
-        total_gravity_dx = 0
-        total_gravity_dy = 0
-        for planet in self.game.planets:
-            dx = planet.x - self.x
-            dy = planet.y - self.y
-            distance = np.sqrt(dx**2 + dy**2)
-            gravity = planet.mass / distance**2
-            gravity_dx = gravity * dx / distance
-            gravity_dy = gravity * dy / distance
-            total_gravity_dx += gravity_dx / 10
-            total_gravity_dy += gravity_dy / 10
-        self.accelerate(total_gravity_dx, total_gravity_dy)
+        self.checkpoint -= 10
+        self.x = self.game.course.checkpoints[self.checkpoint].position[0]
+        self.y = self.game.course.checkpoints[self.checkpoint].position[1]
+        self.angle = self.game.course.checkpoints[self.checkpoint].angle
+        self.time_since_last_checkpoint = 0
 
-    def check_fuel(self):
-        if self.fuel <= 0:
-            self.remove()
+    def check_next_checkpoint(self):
+        checkpointIndex = self.checkpoint
+        next_checkpoint = self.game.course.checkpoints[checkpointIndex]
+        checkpoint_line = [next_checkpoint.left_position, next_checkpoint.right_position]
 
-    def remove(self):
-        self.update_fitness()
-        self.game.fitnesses[self.player_id] = self.fitness
-        if self in self.game.players:
-            self.game.players.remove(self)
-
-    def checkSensors(self):
-        x = self.x
-        y = self.y
-
-        scaled_x = x / self.game.frames_x - 0.5
-        scaled_y = y / self.game.frames_y - 0.5
-
-        movement_vector_x = self.movementVector.dx
-        movement_vector_y = self.movementVector.dy
-        movement_vector_angle = np.arctan2(movement_vector_y, movement_vector_x)
-        movement_vector_magnitude = np.sqrt(movement_vector_x**2 + movement_vector_y**2)
-
-        # input_vector_x = self.inputVector.dx
-        # input_vector_y = self.inputVector.dy
-        input_vector_angle = self.inputVector.angle
-        input_vector_magnitude = self.inputVector.magnitude
-
-        # mass = self.mass
-        # max_thrust = self.max_thrust
-        # max_speed = self.max_speed
-        fuel = self.fuel/self.game.init_fuel
-
-        end_point_x = self.game.end_point[0]
-        end_point_y = self.game.end_point[1]
-        end_point_angle = np.arctan2(end_point_y - y, end_point_x - x)
-        end_point_distance = np.sqrt((end_point_x - x)**2 + (end_point_y - y)**2)
-        
-        sensor_data = [
-            scaled_x,
-            scaled_y,
-            movement_vector_angle,
-            movement_vector_magnitude,
-            input_vector_angle,
-            input_vector_magnitude,
-            fuel,
-            end_point_angle,
-            end_point_distance
+        car_lines = [
+            [self.front_left, self.back_left], # left
+            [self.front_right, self.back_right], # right
+            [self.front_left, self.front_right], # front
+            [self.back_left, self.back_right] # back
         ]
 
-        self.total_gravity_dx = 0
-        self.total_gravity_dy = 0
-        for planet in self.game.planets:
-            dx = planet.x - self.x
-            dy = planet.y - self.y
-            distance = np.sqrt(dx**2 + dy**2)
-            gravity = planet.mass / distance**2
-            gravity_dx = gravity * dx / distance
-            gravity_dy = gravity * dy / distance
-            gravity_angle = np.arctan2(gravity_dy, gravity_dx)
-            gravity_magnitude = np.sqrt(gravity_dx**2 + gravity_dy**2)
-            self.total_gravity_dx += gravity_dx
-            self.total_gravity_dy += gravity_dy
-            sensor_data.append(gravity_angle)
-            sensor_data.append(gravity_magnitude)
-            sensor_data.append(planet.mass/1800)
-        self.total_gravity_angle = np.arctan2(self.total_gravity_dy, self.total_gravity_dx)
-        self.total_gravity_magnitude = np.sqrt(self.total_gravity_dx**2 + self.total_gravity_dy**2)
-        sensor_data.append(self.total_gravity_angle)
-        sensor_data.append(self.total_gravity_magnitude)
+        for car_line in car_lines:
+            if self.intersect(car_line, checkpoint_line):
+                self.checkpoint += 10
+                self.checkpoint %= len(self.game.course.checkpoints)
+                self.time_since_last_checkpoint = 0
+                print(f"Checkpoint: {self.checkpoint}")
+                return
 
-        self.game.playerSensors[self.player_id] = sensor_data
+    def check_collision(self):
+        if self.checkpoint != 0:
+            points = [[checkpoint.left_position, checkpoint.right_position] for checkpoint in self.game.course.checkpoints if checkpoint.index < self.checkpoint + 50 and checkpoint.index > self.checkpoint - 50]
+        else:
+            points = [[checkpoint.left_position, checkpoint.right_position] for checkpoint in self.game.course.checkpoints if checkpoint.index < 50 or checkpoint.index > len(self.game.course.checkpoints) - 50]
 
-    def update_min_distance(self):
-            current_distance = np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2)
-            if current_distance < self.min_distance:
-                self.min_distance = current_distance
+        self.update_corners()
+        car_lines = [
+            [self.front_left, self.back_left], # left
+            [self.front_right, self.back_right], # right
+            [self.front_left, self.front_right], # front
+            [self.back_left, self.back_right] # back
+        ]
 
-    def update_fitness(self):
-        initial_distance = np.sqrt((self.game.start_point[0] - self.game.end_point[0])**2 + (self.game.start_point[1] - self.game.end_point[1])**2) * 0.9
-        current_distance = np.sqrt((self.x - self.game.end_point[0])**2 + (self.y - self.game.end_point[1])**2)
-        self.fitness += 5*(initial_distance / current_distance) + self.fuel/self.game.init_fuel + (initial_distance / self.min_distance) + (self.fastest_speed / self.max_speed)
-        # print(f"player {self.player_id} fitness: {self.fitness}")
+        for i in range(len(points) - 1):
+            p1 = points[i]
+            p2 = points[i+1]
 
+            wall_lines = [
+                [p1[0], p2[0]], # left wall
+                [p1[1], p2[1]] # right wall
+            ]
+
+            for car_line in car_lines:
+                for wall_line in wall_lines:
+                    if self.intersect(car_line, wall_line):
+                        self.color = (255, 0, 0)
+                        self.crash()
+                        return
+        else:
+            self.color = (255, 255, 255)
+
+    def intersect(self, line1, line2):
+        x1, y1 = line1[0]
+        x2, y2 = line1[1]
+        x3, y3 = line2[0]
+        x4, y4 = line2[1]
+
+        def ccw(x1, y1, x2, y2, x3, y3):
+            return (y3 - y1) * (x2 - x1) > (y2 - y1) * (x3 - x1)
+        
+        return ccw(x1, y1, x3, y3, x4, y4) != ccw(x2, y2, x3, y3, x4, y4) and ccw(x1, y1, x2, y2, x3, y3) != ccw(x1, y1, x2, y2, x4, y4)
