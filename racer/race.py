@@ -6,19 +6,58 @@ frames_x = 1280
 frames_y = 720
 
 class Game:
-    def __init__(self, frames_x, frames_y):
+    def __init__(self, frames_x, frames_y, drivers):
         self.frames_x = frames_x
         self.frames_y = frames_y
 
+        self.fitnesses = {}
+
         self.course = Course(frames_x, frames_y)
         self.start = (self.course.points[0][0], self.course.points[0][1])
-        self.drivers = [Driver(self, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index), Driver(self, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index)]
-        
+        self.drivers = []
+        self.driverSensors = {}
+        # self.drivers = [Driver(self, genomeId, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index) for genomeId in drivers]
+        for driver in drivers:
+            self.drivers.append(Driver(driver, self, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index))
+            self.driverSensors[driver] = np.zeros(12)
+
+        self.screen = pygame.display.set_mode((frames_x, frames_y))
+
+        self.is_game_over = False
 
     def draw(self, screen):
         self.course.draw(screen)
         for driver in self.drivers:
             driver.draw(screen)
+
+    def update(self):
+        for driver in self.drivers:
+            driver.move()
+            driver.check_next_checkpoint()
+            driver.check_collision()
+            if driver.time_since_last_checkpoint > 1000:
+                self.drivers.remove(driver)
+                self.fitnesses[driver.id] = driver.fitness
+                print(f"Driver {driver.id} fitness: {driver.fitness}")
+        if len(self.drivers) == 0:
+            self.is_game_over = True
+            return
+        
+
+    def run(self, playerInputs):
+        self.update()
+        for driver in self.drivers:
+            driverInputs = playerInputs[driver.id]
+            driver.handle_input(driverInputs)
+            driver.update()
+            self.driverSensors[driver.id] = driver.get_sensors()
+        self.draw(self.screen)
+    
+    def get_fitnesses(self):
+        return self.fitnesses
+
+    def get_sensor_data(self, driver_id):
+        return self.driverSensors[driver_id]
 
 class Checkpoint:
     def __init__(self, index, position, angle, angle_derivative):
@@ -94,21 +133,8 @@ def main():
 
     running = True
     while running:
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            game.drivers[0].turn(-1)
-        if keys[pygame.K_RIGHT]:
-            game.drivers[0].turn(1)
-        if keys[pygame.K_UP]:
-            game.drivers[0].accelerate(0.01)
-        if keys[pygame.K_DOWN]:
-            game.drivers[0].accelerate(-0.1)
-
-        game.drivers[1].accelerate(0.1)
-
         for driver in game.drivers:
             driver.update()
-
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

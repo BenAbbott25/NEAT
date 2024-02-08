@@ -2,12 +2,14 @@ import numpy as np
 import pygame
 
 class Driver:
-    def __init__(self, game, x, y, angle, checkpoint, max_speed=200, max_steering=1):
+    def __init__(self, genomeId, game, x, y, angle, checkpoint, max_speed=200, max_steering=1):
         self.game = game
+        self.id = genomeId
         self.x = x
         self.y = y
         self.angle = angle
         self.checkpoint = checkpoint
+        self.slice = checkpoint
         self.speed = 0
         self.steering = 0
         self.max_speed = max_speed
@@ -57,14 +59,7 @@ class Driver:
         self.steering = max(-self.max_steering, min(self.steering, self.max_steering))
 
     def crash(self):
-        self.speed = 0
-        self.steering = 0
-
-        self.checkpoint -= 10
-        self.x = self.game.course.checkpoints[self.checkpoint].position[0]
-        self.y = self.game.course.checkpoints[self.checkpoint].position[1]
-        self.angle = self.game.course.checkpoints[self.checkpoint].angle
-        self.time_since_last_checkpoint = 0
+        self.game.drivers.remove(self)
 
     def check_next_checkpoint(self):
         checkpointIndex = self.checkpoint
@@ -85,6 +80,37 @@ class Driver:
                 self.time_since_last_checkpoint = 0
                 print(f"Checkpoint: {self.checkpoint}")
                 return
+    
+    def handle_input(self, inputs):
+        acceleration = inputs[0]
+        steering = inputs[1]
+        self.accelerate(acceleration)
+        self.turn(steering)
+
+    def get_sensors(self):
+        # speed, angle, acceleration, steering, distance and angle to next 3 checkpoints center, left and right
+        
+        sensors = [
+            self.checkpoint,
+            self.speed,
+            self.angle,
+            self.steering,
+        ]
+        
+        sensepoints = [
+            self.game.course.checkpoints[self.checkpoint].position, # next checkpoint
+            self.game.course.checkpoints[self.checkpoint].left_position, # next checkpoint left
+            self.game.course.checkpoints[self.checkpoint].right_position, # next checkpoint right
+            self.game.course.checkpoints[(self.checkpoint + 10) % len(self.game.course.checkpoints)].position # next next checkpoint
+        ]
+
+        for point in sensepoints:
+            dx = point[0] - self.x
+            dy = point[1] - self.y
+            distance = np.sqrt(dx**2 + dy**2)
+            angle = np.arctan2(dy, dx)
+            sensors.append(distance)
+            sensors.append(angle)
 
     def check_collision(self):
         if self.checkpoint != 0:
