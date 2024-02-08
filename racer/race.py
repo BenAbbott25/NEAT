@@ -16,7 +16,7 @@ class Game:
 
     def draw(self, screen):
         self.course.draw(screen)
-        self.racer.draw(screen)
+        self.driver.draw(screen)
 
 class Checkpoint:
     def __init__(self, index, position, angle, angle_derivative):
@@ -24,7 +24,7 @@ class Checkpoint:
         self.position = position
         self.angle = angle
         self.angle_derivative = angle_derivative
-        self.width = min(max(angle_derivative, 10), 50)
+        self.width = min(max(angle_derivative, 15), 50)
         print(f"Index: {self.index},Width: {self.width}, Angle Derivative: {self.angle_derivative}")
         self.left_position = (self.position[0] + np.cos(self.angle + np.pi/2)*self.width, self.position[1] + np.sin(self.angle + np.pi/2)*self.width)
         self.right_position = (self.position[0] + np.cos(self.angle - np.pi/2)*self.width, self.position[1] + np.sin(self.angle - np.pi/2)*self.width)
@@ -85,10 +85,17 @@ class Course:
             pygame.draw.line(screen, (255, 255, 255), self.checkpoints[i-1].right_position, self.checkpoints[i].right_position)
 
 class Driver:
-    def __init__(self, x, y, angle):
+    def __init__(self, x, y, angle, speed=0, steering=0, max_speed=200, max_steering=1):
         self.x = x
         self.y = y
         self.angle = angle
+        self.speed = speed
+        self.steering = steering
+        self.max_speed = max_speed
+        self.max_steering = max_steering
+        self.update_corners()
+
+    def update_corners(self):
         self.front_left = (self.x + np.cos(self.angle + np.pi/6)*10, self.y + np.sin(self.angle + np.pi/6)*10)
         self.front_right = (self.x + np.cos(self.angle - np.pi/6)*10, self.y + np.sin(self.angle - np.pi/6)*10)
         self.back_left = (self.x + np.cos(self.angle + np.pi + np.pi/6)*10, self.y + np.sin(self.angle + np.pi + np.pi/6)*10)
@@ -96,6 +103,27 @@ class Driver:
 
     def draw(self, screen):
         pygame.draw.polygon(screen, (255, 255, 255), [self.front_left, self.front_right, self.back_left, self.back_right])
+
+    def move(self):
+        dx = np.cos(self.angle) * self.speed
+        dy = np.sin(self.angle) * self.speed
+        self.x += dx
+        self.y += dy
+        if self.speed > 0.1:
+            self.angle += self.steering/100
+        self.speed *= 0.995
+        self.steering *= 0.95
+        self.update_corners()
+
+    def accelerate(self, acceleration):
+        self.speed += acceleration
+        self.speed = max(0, min(self.speed, self.max_speed))
+
+    def turn(self, dtheta):
+        self.steering += dtheta
+        self.steering = max(-self.max_steering, min(self.steering, self.max_steering))
+
+
 
 def main():
     pygame.init()
@@ -106,11 +134,22 @@ def main():
 
     running = True
     while running:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            game.driver.turn(-1)
+        if keys[pygame.K_RIGHT]:
+            game.driver.turn(1)
+        if keys[pygame.K_UP]:
+            game.driver.accelerate(0.01)
+        if keys[pygame.K_DOWN]:
+            game.driver.accelerate(-0.1)
+
+        game.driver.move()
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        
-        screen.fill((105, 105, 105))
+        screen.fill((40, 40, 40))
         game.draw(screen)
         pygame.display.flip()
 
