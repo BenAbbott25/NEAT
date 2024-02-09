@@ -16,7 +16,7 @@ class Driver:
         self.max_steering = max_steering
         self.color = (255, 255, 255)
         self.time_since_last_checkpoint = 0
-        self.max_time_since_last_checkpoint = 100
+        self.max_time_since_last_checkpoint = 200
         self.fitness = 0
 
         self.update_corners()
@@ -53,7 +53,7 @@ class Driver:
         dx = np.cos(self.angle) * self.speed
         dy = np.sin(self.angle) * self.speed
 
-        if self.speed > 0.1:
+        if self.speed > self.max_speed * 0.75:
             self.angle += self.steering / 10
             dx += np.cos(self.angle - self.steering) * self.speed / 5
             dy += np.sin(self.angle - self.steering) * self.speed / 5
@@ -76,7 +76,6 @@ class Driver:
         self.game.fitnesses[self.id] = self.fitness
         if self in self.game.drivers:
             self.game.drivers.remove(self)
-        self.game.drivers.remove(self)
 
     def check_next_checkpoint(self):
         checkpointIndex = self.checkpoint
