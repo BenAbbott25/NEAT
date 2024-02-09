@@ -11,7 +11,7 @@ max_checkpoint_time = 1000
 
 population_size = 1000
 num_games = 1
-starting_generation = 70
+starting_generation = 80
 ending_generation = 5000
 save_every = 100
 
@@ -46,10 +46,19 @@ else:
     # print(f"Starting from generation {previous_gen}...")
     # print(f"Loading file {save_file}...")
 
-def eval_genomes(genomes, config, course):
+def eval_genomes(genomes, config, course, p):
     genomes_list = list(genomes)
-    species_colours = {species_id: (np.random.randint(0, 255), np.random.randint(0, 255), np.random.randint(0, 255)) for species_id in set(genome.species_id for genome in genomes_list)}
-    genome_colours = {genome_id: species_colours[genome.species_id] for genome_id, genome in genomes_list}
+
+    species_colours = {}
+    genome_colours = {}
+    for species_id in p.species.species:
+        if species_id not in species_colours:
+            species_colours[species_id] = (np.random.randint(0, 255), np.random.randint(0, 255), np.random.randint(0, 255))
+        for genome_id in p.species.species[species_id].members:
+            if genome_id == p.best_genome.key:
+                genome_colours[genome_id] = (255, 255, 255)
+            genome_colours[genome_id] = species_colours[species_id]
+
     for genome_id, genome in tqdm.tqdm(genomes_list, desc="Creating Networks"):
         genome.fitness = 0
         nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in genomes_list}
@@ -93,7 +102,8 @@ def run_neat(config_file, starting_generation=0, ending_generation=2000, save_ev
             with open(f"{save_dir}/population_gen_{i}.pkl", "rb") as f:
                 p = pickle.load(f)
         course = Course(frame_size_x, frame_size_y)
-        winner = p.run(lambda genomes, config: eval_genomes(genomes, config, course), save_every)
+
+        winner = p.run(lambda genomes, config: eval_genomes(genomes, config, course, p), save_every)
         # Save the winner and the population state.
         print(f"Saving winner and population of generation {i+save_every}...")
         if not os.path.exists(save_dir):

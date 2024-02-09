@@ -33,7 +33,6 @@ class Driver:
         self.check_next_checkpoint()
         self.check_collision()
         if self.time_since_last_checkpoint > self.max_time_since_last_checkpoint:
-            self.color = (255, 255, 0)
             self.crash()
         self.time_since_last_checkpoint += 1
 
@@ -134,7 +133,6 @@ class Driver:
 
     def check_collision(self):
         if self.x < 0 or self.x > self.game.frames_x or self.y < 0 or self.y > self.game.frames_y:
-            self.color = (255, 0, 0)
             self.crash()
             return
 
@@ -163,11 +161,8 @@ class Driver:
             for car_line in car_lines:
                 for wall_line in wall_lines:
                     if self.intersect(car_line, wall_line):
-                        self.color = (255, 0, 0)
                         self.crash()
                         return
-        else:
-            self.color = (255, 255, 255)
 
     def intersect(self, line1, line2):
         x1, y1 = line1[0]
