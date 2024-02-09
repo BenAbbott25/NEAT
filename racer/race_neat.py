@@ -9,15 +9,15 @@ frame_size_x = 1280
 frame_size_y = 720
 max_checkpoint_time = 1000
 
-population_size = 500
+population_size = 1000
 num_games = 1
-starting_generation = 200
+starting_generation = 50
 ending_generation = 5000
 save_every = 100
 
 batch_size = 100
 
-save_dir = f"saves"
+save_dir = f"saves/pop_{population_size}_run_4"
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 

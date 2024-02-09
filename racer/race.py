@@ -1,7 +1,6 @@
 import pygame
 import numpy as np
 from driver import Driver
-from tqdm import tqdm
 
 frames_x = 1280
 frames_y = 720
@@ -20,7 +19,7 @@ class Game:
         # self.drivers = [Driver(self, genomeId, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index) for genomeId in drivers]
         for driver in drivers:
             self.drivers.append(Driver(driver, self, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index))
-            self.driverSensors[driver] = np.zeros(12)
+            self.driverSensors[driver] = np.zeros(18)
 
         self.screen = pygame.display.set_mode((frames_x, frames_y))
 
@@ -44,9 +43,9 @@ class Game:
         
 
     def run(self, playerInputs):
-        self.update()
         self.draw(self.screen)
         pygame.display.flip()
+        self.update()
         for driver in self.drivers:
             driverInputs = playerInputs[driver.id]
             driver.handle_input(driverInputs)
@@ -90,13 +89,13 @@ class Course:
         t = 0
         self.points = []
         while t <= 2 * np.pi:
-            x = 500 * np.cos(t) + frames_x / 2
-            y = 250 * np.sin(2*t) + frames_y / 2
+            x = 500 * np.cos(t - np.pi/2) + frames_x / 2
+            y = 250 * np.sin(2*t - np.pi) + frames_y / 2
             self.points.append([x, y])
             t += 0.005 * np.pi
 
         self.checkpoints = []
-        for i in tqdm(range(len(self.points) - 1), desc="Generating points"):
+        for i in range(len(self.points) - 1):
             dx = self.points[i+1][0] - self.points[i][0]
             dy = self.points[i+1][1] - self.points[i][1]
             angle = np.arctan2(dy, dx)
@@ -109,7 +108,7 @@ class Course:
             self.checkpoints.append(Checkpoint(i, self.points[i], angle, angle_derivative))
 
         # smooth width changes
-        for i in tqdm(range(len(self.checkpoints)-1), desc="Smoothing corners"):
+        for i in range(len(self.checkpoints)-1):
             if self.checkpoints[i].width < self.checkpoints[i-1].width and self.checkpoints[i].width < self.checkpoints[i+1].width:
                 self.checkpoints[i].width = (self.checkpoints[i-1].width + self.checkpoints[i+1].width) / 2
                 self.checkpoints[i].left_position = (self.checkpoints[i].position[0] + np.cos(self.checkpoints[i].angle + np.pi/2)*self.checkpoints[i].width, self.checkpoints[i].position[1] + np.sin(self.checkpoints[i].angle + np.pi/2)*self.checkpoints[i].width)

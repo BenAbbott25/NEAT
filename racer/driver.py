@@ -2,7 +2,7 @@ import numpy as np
 import pygame
 
 class Driver:
-    def __init__(self, genomeId, game, x, y, angle, checkpoint, max_speed=200, max_steering=1):
+    def __init__(self, genomeId, game, x, y, angle, checkpoint, max_speed=10, max_steering=1):
         self.game = game
         self.id = genomeId
         self.x = x
@@ -16,7 +16,7 @@ class Driver:
         self.max_steering = max_steering
         self.color = (255, 255, 255)
         self.time_since_last_checkpoint = 0
-        self.max_time_since_last_checkpoint = 200
+        self.max_time_since_last_checkpoint = 100
         self.fitness = 0
 
         self.update_corners()
@@ -46,14 +46,13 @@ class Driver:
         bar_width = self.game.frames_x
         bar_height = 20
         timer_bar_position = (0, 0)
-        pygame.draw.rect(screen, (255, 255, 0), pygame.Rect(timer_bar_position[0], timer_bar_position[1], bar_width, bar_height/2))
-        pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(timer_bar_position[0] + bar_width * (1 - time_percentage), timer_bar_position[1], time_percentage * bar_width, bar_height/2))
+        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(timer_bar_position[0], timer_bar_position[1], bar_width * (1 - time_percentage), bar_height/2))
 
     def move(self):
         dx = np.cos(self.angle) * self.speed
         dy = np.sin(self.angle) * self.speed
 
-        if self.speed > self.max_speed * 0.75:
+        if self.speed > self.max_speed * 0.8:
             self.angle += self.steering / 10
             dx += np.cos(self.angle - self.steering) * self.speed / 5
             dy += np.sin(self.angle - self.steering) * self.speed / 5
@@ -66,14 +65,14 @@ class Driver:
 
     def accelerate(self, acceleration):
         self.speed += acceleration
-        self.speed = max(0, min(self.speed, self.max_speed))
+        self.speed = max(-self.speed/10, min(self.speed, self.max_speed))
 
     def turn(self, dtheta):
         self.steering += dtheta
         self.steering = max(-self.max_steering, min(self.steering, self.max_steering))
 
     def crash(self):
-        self.game.fitnesses[self.id] = self.fitness
+        self.game.fitnesses[self.id] = self.fitness - self.time_since_last_checkpoint/100
         if self in self.game.drivers:
             self.game.drivers.remove(self)
 
@@ -117,7 +116,10 @@ class Driver:
             self.game.course.checkpoints[self.checkpoint].position, # next checkpoint
             self.game.course.checkpoints[self.checkpoint].left_position, # next checkpoint left
             self.game.course.checkpoints[self.checkpoint].right_position, # next checkpoint right
-            self.game.course.checkpoints[(self.checkpoint + 10) % len(self.game.course.checkpoints)].position # next next checkpoint
+            self.game.course.checkpoints[(self.checkpoint + 10) % len(self.game.course.checkpoints)].position, # next next checkpoint
+            self.game.course.checkpoints[(self.checkpoint - 10) % len(self.game.course.checkpoints)].position, # previous checkpoint
+            self.game.course.checkpoints[(self.checkpoint - 10) % len(self.game.course.checkpoints)].left_position, # previous checkpoint left
+            self.game.course.checkpoints[(self.checkpoint - 10) % len(self.game.course.checkpoints)].right_position # previous checkpoint right
         ]
 
         for point in sensepoints:
@@ -131,6 +133,11 @@ class Driver:
         return np.array(sensors)
 
     def check_collision(self):
+        if self.x < 0 or self.x > self.game.frames_x or self.y < 0 or self.y > self.game.frames_y:
+            self.color = (255, 0, 0)
+            self.crash()
+            return
+
         if self.checkpoint != 0:
             points = [[checkpoint.left_position, checkpoint.right_position] for checkpoint in self.game.course.checkpoints if checkpoint.index < self.checkpoint + 50 and checkpoint.index > self.checkpoint - 50]
         else:
