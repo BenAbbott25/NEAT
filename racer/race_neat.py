@@ -11,7 +11,7 @@ max_checkpoint_time = 1000
 
 population_size = 1000
 num_games = 1
-starting_generation = 50
+starting_generation = 70
 ending_generation = 5000
 save_every = 100
 
@@ -48,6 +48,8 @@ else:
 
 def eval_genomes(genomes, config, course):
     genomes_list = list(genomes)
+    species_colours = {species_id: (np.random.randint(0, 255), np.random.randint(0, 255), np.random.randint(0, 255)) for species_id in set(genome.species_id for genome in genomes_list)}
+    genome_colours = {genome_id: species_colours[genome.species_id] for genome_id, genome in genomes_list}
     for genome_id, genome in tqdm.tqdm(genomes_list, desc="Creating Networks"):
         genome.fitness = 0
         nets = {genome_id: neat.nn.FeedForwardNetwork.create(genome, config) for genome_id, genome in genomes_list}
@@ -57,7 +59,7 @@ def eval_genomes(genomes, config, course):
         for i in tqdm.tqdm(range(0, len(genomes_list), batch_size), desc=f"{n_game+1}/{num_games} Games"):
             group = genomes_list[i:i+batch_size]
             genome_ids = [genome_id for genome_id, _ in group]
-            game = Game(frame_size_x, frame_size_y, course, genome_ids)
+            game = Game(frame_size_x, frame_size_y, course, genome_ids, genome_colours)
             # game.draw_bg()  # Slow not good for training
             playerInputs = {}
             while len(game.drivers) > 0:

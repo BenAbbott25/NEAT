@@ -2,7 +2,7 @@ import numpy as np
 import pygame
 
 class Driver:
-    def __init__(self, genomeId, game, x, y, angle, checkpoint, max_speed=10, max_steering=1):
+    def __init__(self, genomeId, game, x, y, angle, checkpoint, colour, max_speed=10, max_steering=1):
         self.game = game
         self.id = genomeId
         self.x = x
@@ -14,7 +14,7 @@ class Driver:
         self.steering = 0
         self.max_speed = max_speed
         self.max_steering = max_steering
-        self.color = (255, 255, 255)
+        self.color = colour
         self.time_since_last_checkpoint = 0
         self.max_time_since_last_checkpoint = 100
         self.fitness = 0

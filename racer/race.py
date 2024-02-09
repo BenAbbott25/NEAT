@@ -6,11 +6,12 @@ frames_x = 1280
 frames_y = 720
 
 class Game:
-    def __init__(self, frames_x, frames_y, course, drivers):
+    def __init__(self, frames_x, frames_y, course, drivers, genome_colours):
         self.frames_x = frames_x
         self.frames_y = frames_y
 
         self.fitnesses = {}
+        self.genome_colours = genome_colours
 
         self.course = course
         self.start = (self.course.points[0][0], self.course.points[0][1])
@@ -18,7 +19,7 @@ class Game:
         self.driverSensors = {}
         # self.drivers = [Driver(self, genomeId, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index) for genomeId in drivers]
         for driver in drivers:
-            self.drivers.append(Driver(driver, self, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index))
+            self.drivers.append(Driver(driver, self, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index, self.genome_colours[driver]))
             self.driverSensors[driver] = np.zeros(18)
 
         self.screen = pygame.display.set_mode((frames_x, frames_y))
