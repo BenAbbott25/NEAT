@@ -1,18 +1,19 @@
 import pygame
 import numpy as np
 from driver import Driver
+from tqdm import tqdm
 
 frames_x = 1280
 frames_y = 720
 
 class Game:
-    def __init__(self, frames_x, frames_y, drivers):
+    def __init__(self, frames_x, frames_y, course, drivers):
         self.frames_x = frames_x
         self.frames_y = frames_y
 
         self.fitnesses = {}
 
-        self.course = Course(frames_x, frames_y)
+        self.course = course
         self.start = (self.course.points[0][0], self.course.points[0][1])
         self.drivers = []
         self.driverSensors = {}
@@ -35,10 +36,8 @@ class Game:
             driver.move()
             driver.check_next_checkpoint()
             driver.check_collision()
-            if driver.time_since_last_checkpoint > 1000:
-                self.drivers.remove(driver)
-                self.fitnesses[driver.id] = driver.fitness
-                print(f"Driver {driver.id} fitness: {driver.fitness}")
+            if driver.time_since_last_checkpoint > driver.max_time_since_last_checkpoint:
+                driver.crash()
         if len(self.drivers) == 0:
             self.is_game_over = True
             return
@@ -46,12 +45,14 @@ class Game:
 
     def run(self, playerInputs):
         self.update()
+        self.draw(self.screen)
+        pygame.display.flip()
         for driver in self.drivers:
             driverInputs = playerInputs[driver.id]
             driver.handle_input(driverInputs)
             driver.update()
             self.driverSensors[driver.id] = driver.get_sensors()
-        self.draw(self.screen)
+
     
     def get_fitnesses(self):
         return self.fitnesses
@@ -95,7 +96,7 @@ class Course:
             t += 0.005 * np.pi
 
         self.checkpoints = []
-        for i in range(len(self.points) - 1):
+        for i in tqdm(range(len(self.points) - 1), desc="Generating points"):
             dx = self.points[i+1][0] - self.points[i][0]
             dy = self.points[i+1][1] - self.points[i][1]
             angle = np.arctan2(dy, dx)
@@ -108,41 +109,18 @@ class Course:
             self.checkpoints.append(Checkpoint(i, self.points[i], angle, angle_derivative))
 
         # smooth width changes
-        for i in range(len(self.checkpoints)-1):
+        for i in tqdm(range(len(self.checkpoints)-1), desc="Smoothing corners"):
             if self.checkpoints[i].width < self.checkpoints[i-1].width and self.checkpoints[i].width < self.checkpoints[i+1].width:
                 self.checkpoints[i].width = (self.checkpoints[i-1].width + self.checkpoints[i+1].width) / 2
                 self.checkpoints[i].left_position = (self.checkpoints[i].position[0] + np.cos(self.checkpoints[i].angle + np.pi/2)*self.checkpoints[i].width, self.checkpoints[i].position[1] + np.sin(self.checkpoints[i].angle + np.pi/2)*self.checkpoints[i].width)
                 self.checkpoints[i].right_position = (self.checkpoints[i].position[0] + np.cos(self.checkpoints[i].angle - np.pi/2)*self.checkpoints[i].width, self.checkpoints[i].position[1] + np.sin(self.checkpoints[i].angle - np.pi/2)*self.checkpoints[i].width)
 
-        
-
     def draw(self, screen):
+        screen.fill((0, 0, 0))
+
         for checkpoint in self.checkpoints:
             checkpoint.draw(screen)
         
         for i in range(len(self.checkpoints)):
             pygame.draw.line(screen, (255, 255, 255), self.checkpoints[i-1].left_position, self.checkpoints[i].left_position)
             pygame.draw.line(screen, (255, 255, 255), self.checkpoints[i-1].right_position, self.checkpoints[i].right_position)
-
-def main():
-    pygame.init()
-    screen = pygame.display.set_mode((frames_x, frames_y))
-    pygame.display.set_caption("Orbits")
-
-    game = Game(frames_x, frames_y)
-
-    running = True
-    while running:
-        for driver in game.drivers:
-            driver.update()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        screen.fill((40, 40, 40))
-        game.draw(screen)
-        pygame.display.flip()
-
-
-if __name__ == '__main__':
-    main()

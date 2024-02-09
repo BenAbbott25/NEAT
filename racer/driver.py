@@ -16,7 +16,8 @@ class Driver:
         self.max_steering = max_steering
         self.color = (255, 255, 255)
         self.time_since_last_checkpoint = 0
-        self.max_time_since_last_checkpoint = 1000
+        self.max_time_since_last_checkpoint = 100
+        self.fitness = 0
 
         self.update_corners()
 
@@ -38,14 +39,27 @@ class Driver:
 
     def draw(self, screen):
         pygame.draw.polygon(screen, self.color, [self.front_left, self.front_right, self.back_left, self.back_right])
+        self.draw_checkpoint_timer_bar(screen)
+
+    def draw_checkpoint_timer_bar(self, screen):
+        time_percentage = self.time_since_last_checkpoint / self.max_time_since_last_checkpoint
+        bar_width = self.game.frames_x
+        bar_height = 20
+        timer_bar_position = (0, 0)
+        pygame.draw.rect(screen, (255, 255, 0), pygame.Rect(timer_bar_position[0], timer_bar_position[1], bar_width, bar_height/2))
+        pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(timer_bar_position[0] + bar_width * (1 - time_percentage), timer_bar_position[1], time_percentage * bar_width, bar_height/2))
 
     def move(self):
         dx = np.cos(self.angle) * self.speed
         dy = np.sin(self.angle) * self.speed
+
+        if self.speed > 0.1:
+            self.angle += self.steering / 10
+            dx += np.cos(self.angle - self.steering) * self.speed / 5
+            dy += np.sin(self.angle - self.steering) * self.speed / 5
+
         self.x += dx
         self.y += dy
-        if self.speed > 0.1:
-            self.angle += self.steering/100
         self.speed *= 0.995
         self.steering *= 0.95
         self.update_corners()
@@ -59,6 +73,9 @@ class Driver:
         self.steering = max(-self.max_steering, min(self.steering, self.max_steering))
 
     def crash(self):
+        self.game.fitnesses[self.id] = self.fitness
+        if self in self.game.drivers:
+            self.game.drivers.remove(self)
         self.game.drivers.remove(self)
 
     def check_next_checkpoint(self):
@@ -76,9 +93,9 @@ class Driver:
         for car_line in car_lines:
             if self.intersect(car_line, checkpoint_line):
                 self.checkpoint += 10
+                self.fitness += 1
                 self.checkpoint %= len(self.game.course.checkpoints)
                 self.time_since_last_checkpoint = 0
-                print(f"Checkpoint: {self.checkpoint}")
                 return
     
     def handle_input(self, inputs):
@@ -111,6 +128,8 @@ class Driver:
             angle = np.arctan2(dy, dx)
             sensors.append(distance)
             sensors.append(angle)
+
+        return np.array(sensors)
 
     def check_collision(self):
         if self.checkpoint != 0:

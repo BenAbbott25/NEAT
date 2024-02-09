@@ -2,7 +2,7 @@ import neat
 import os
 import pickle
 import tqdm
-from race import Game
+from race import Game, Course
 import numpy as np
 
 frame_size_x = 1280
@@ -10,7 +10,7 @@ frame_size_y = 720
 max_checkpoint_time = 1000
 
 population_size = 500
-num_games = 5
+num_games = 1
 starting_generation = 0
 ending_generation = 5000
 save_every = 100
@@ -46,7 +46,7 @@ else:
     # print(f"Starting from generation {previous_gen}...")
     # print(f"Loading file {save_file}...")
 
-def eval_genomes(genomes, config, generation):
+def eval_genomes(genomes, config, course):
     genomes_list = list(genomes)
     for genome_id, genome in tqdm.tqdm(genomes_list, desc="Creating Networks"):
         genome.fitness = 0
@@ -57,7 +57,7 @@ def eval_genomes(genomes, config, generation):
         for i in tqdm.tqdm(range(0, len(genomes_list), batch_size), desc=f"{n_game+1}/{num_games} Games"):
             group = genomes_list[i:i+batch_size]
             genome_ids = [genome_id for genome_id, _ in group]
-            game = Game(frame_size_x, frame_size_y, genome_ids)
+            game = Game(frame_size_x, frame_size_y, course, genome_ids)
             # game.draw_bg()  # Slow not good for training
             playerInputs = {}
             while len(game.drivers) > 0:
@@ -90,7 +90,8 @@ def run_neat(config_file, starting_generation=0, ending_generation=2000, save_ev
             print(f"Loading file /population_gen_{i}.pkl...")
             with open(f"saves/population_gen_{i}.pkl", "rb") as f:
                 p = pickle.load(f)
-        winner = p.run(lambda genomes, config: eval_genomes(genomes, config, i), save_every)
+        course = Course(frame_size_x, frame_size_y)
+        winner = p.run(lambda genomes, config: eval_genomes(genomes, config, course), save_every)
         # Save the winner and the population state.
         print(f"Saving winner and population of generation {i+save_every}...")
         save_dir = f"saves"
