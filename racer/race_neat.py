@@ -11,15 +11,15 @@ max_checkpoint_time = 1000
 
 population_size = 500
 num_games = 1
-starting_generation = 0
+starting_generation = 200
 ending_generation = 5000
 save_every = 100
 
 batch_size = 100
 
-save_file_dir = f"saves"
-if not os.path.exists(save_file_dir):
-    os.makedirs(save_file_dir)
+save_dir = f"saves"
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
 
 params = {
     "frame_size_x": frame_size_x,
@@ -33,15 +33,15 @@ params = {
     "batch_size": batch_size,
 }
 
-params_file = os.path.join(save_file_dir, "params.pkl")
+params_file = os.path.join(save_dir, "params.pkl")
 with open(params_file, "wb") as f:
     pickle.dump(params, f)
-
+[]
 
 if starting_generation == 0:
     previous_gen = 0
 else:
-    save_file = f"saves/winner_gen_{starting_generation}.pkl"
+    save_file = f"{save_dir}/winner_gen_{starting_generation}.pkl"
     previous_gen = int(save_file.split("_")[-1].split(".")[0])
     # print(f"Starting from generation {previous_gen}...")
     # print(f"Loading file {save_file}...")
@@ -86,20 +86,19 @@ def run_neat(config_file, starting_generation=0, ending_generation=2000, save_ev
 
     for i in range(starting_generation, ending_generation, save_every):
         # Load the saved population state if it exists
-        if os.path.isfile(f"saves/population_gen_{i}.pkl"):
+        if os.path.isfile(f"{save_dir}/population_gen_{i}.pkl"):
             print(f"Loading file /population_gen_{i}.pkl...")
-            with open(f"saves/population_gen_{i}.pkl", "rb") as f:
+            with open(f"{save_dir}/population_gen_{i}.pkl", "rb") as f:
                 p = pickle.load(f)
         course = Course(frame_size_x, frame_size_y)
         winner = p.run(lambda genomes, config: eval_genomes(genomes, config, course), save_every)
         # Save the winner and the population state.
         print(f"Saving winner and population of generation {i+save_every}...")
-        save_dir = f"saves"
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        with open(f"saves/winner_gen_{i+save_every}.pkl", "wb") as f:
+        with open(f"{save_dir}/winner_gen_{i+save_every}.pkl", "wb") as f:
             pickle.dump(winner, f)
-        with open(f"saves/population_gen_{i+save_every}.pkl", "wb") as f:
+        with open(f"{save_dir}/population_gen_{i+save_every}.pkl", "wb") as f:
             pickle.dump(p, f)
 
     print("Winner's genome saved to winner.pkl")
@@ -109,7 +108,7 @@ def update_config():
     with open('neat-config.ini', 'r') as f:
         config_lines = f.readlines()
 
-    with open(f'{save_file_dir}/neat-config.ini', 'w') as f:
+    with open(f'{save_dir}/neat-config.ini', 'w') as f:
         print(f"Updating config...")
         for line in config_lines:
             if line.startswith('pop_size'):
@@ -119,7 +118,7 @@ def update_config():
 
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, f'{save_file_dir}/neat-config.ini')
+    config_path = os.path.join(local_dir, f'{save_dir}/neat-config.ini')
     if previous_gen < 100:
         run_neat(config_path, previous_gen, 100, 10)
         run_neat(config_path, 100, 1000, 100)
