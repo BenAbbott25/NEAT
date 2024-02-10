@@ -53,8 +53,8 @@ class Driver:
 
         if self.speed > self.max_speed * 0.8:
             self.angle += self.steering / 10
-            dx += np.cos(self.angle - self.steering) * self.speed / 5
-            dy += np.sin(self.angle - self.steering) * self.speed / 5
+            dx += np.cos(self.angle - self.steering) * self.speed / 10
+            dy += np.sin(self.angle - self.steering) * self.speed / 10
 
         self.x += dx
         self.y += dy
