@@ -9,15 +9,15 @@ frame_size_x = 1280
 frame_size_y = 720
 max_checkpoint_time = 1000
 
-population_size = 1000
+population_size = 500
 num_games = 1
-starting_generation = 1000
+starting_generation = 700
 ending_generation = 5000
 save_every = 100
 
-batch_size = 100
+batch_size = 50
 
-save_dir = f"saves/pop_{population_size}_run_4"
+save_dir = f"saves/pop_{population_size}_run_5"
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
@@ -56,8 +56,6 @@ def eval_genomes(genomes, config, course, p):
             species_colours[species_id] = (np.random.randint(0, 255), np.random.randint(0, 255), np.random.randint(0, 255))
         for genome_id in p.species.species[species_id].members:
             genome_colours[genome_id] = species_colours[species_id]
-            if genome_id == p.best_genome.key:
-                genome_colours[genome_id] = (255, 255, 255)
 
     for genome_id, genome in tqdm.tqdm(genomes_list, desc="Creating Networks"):
         genome.fitness = 0

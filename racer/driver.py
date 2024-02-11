@@ -53,8 +53,8 @@ class Driver:
 
         if self.speed > self.max_speed * 0.8:
             self.angle += self.steering / 10
-            dx += np.cos(self.angle - self.steering) * self.speed / 10
-            dy += np.sin(self.angle - self.steering) * self.speed / 10
+            dx += np.cos(self.angle - self.steering) * self.speed / self.max_speed
+            dy += np.sin(self.angle - self.steering) * self.speed / self.max_speed
 
         self.x += dx
         self.y += dy
@@ -89,10 +89,11 @@ class Driver:
 
         for car_line in car_lines:
             if self.intersect(car_line, checkpoint_line):
-                self.checkpoint += 10
-                self.fitness += 1
+                self.checkpoint += 1
+                self.fitness += 0.1
                 self.checkpoint %= len(self.game.course.checkpoints)
-                self.time_since_last_checkpoint = 0
+                if self.checkpoint % 10 == 0:
+                    self.time_since_last_checkpoint = 0
                 return
     
     def handle_input(self, inputs):
@@ -111,15 +112,11 @@ class Driver:
             self.steering,
         ]
         
-        sensepoints = [
-            self.game.course.checkpoints[self.checkpoint].position, # next checkpoint
-            self.game.course.checkpoints[self.checkpoint].left_position, # next checkpoint left
-            self.game.course.checkpoints[self.checkpoint].right_position, # next checkpoint right
-            self.game.course.checkpoints[(self.checkpoint + 10) % len(self.game.course.checkpoints)].position, # next next checkpoint
-            self.game.course.checkpoints[(self.checkpoint - 10) % len(self.game.course.checkpoints)].position, # previous checkpoint
-            self.game.course.checkpoints[(self.checkpoint - 10) % len(self.game.course.checkpoints)].left_position, # previous checkpoint left
-            self.game.course.checkpoints[(self.checkpoint - 10) % len(self.game.course.checkpoints)].right_position # previous checkpoint right
-        ]
+        sensepoints = []
+        for i in range(5):
+            sensepoints.append(self.game.course.checkpoints[(self.checkpoint + i * 5) % len(self.game.course.checkpoints)].position)
+            sensepoints.append(self.game.course.checkpoints[(self.checkpoint + i * 5) % len(self.game.course.checkpoints)].left_position)
+            sensepoints.append(self.game.course.checkpoints[(self.checkpoint + i * 5) % len(self.game.course.checkpoints)].right_position)
 
         for point in sensepoints:
             dx = point[0] - self.x
@@ -128,7 +125,6 @@ class Driver:
             angle = np.arctan2(dy, dx)
             sensors.append(distance)
             sensors.append(angle)
-
         return np.array(sensors)
 
     def check_collision(self):

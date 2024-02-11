@@ -20,7 +20,7 @@ class Game:
         # self.drivers = [Driver(self, genomeId, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index) for genomeId in drivers]
         for driver in drivers:
             self.drivers.append(Driver(driver, self, self.start[0], self.start[1], self.course.checkpoints[0].angle, self.course.checkpoints[0].index, self.genome_colours[driver]))
-            self.driverSensors[driver] = np.zeros(18)
+            self.driverSensors[driver] = np.zeros(34)
 
         self.screen = pygame.display.set_mode((frames_x, frames_y))
 
@@ -66,7 +66,7 @@ class Checkpoint:
         self.position = position
         self.angle = angle
         self.angle_derivative = angle_derivative
-        self.width = min(max(angle_derivative, 15), 50)
+        self.width = min(max(angle_derivative, 25), 50) * 1.5
         self.left_position = (self.position[0] + np.cos(self.angle + np.pi/2)*self.width, self.position[1] + np.sin(self.angle + np.pi/2)*self.width)
         self.right_position = (self.position[0] + np.cos(self.angle - np.pi/2)*self.width, self.position[1] + np.sin(self.angle - np.pi/2)*self.width)
 
@@ -90,8 +90,8 @@ class Course:
         t = 0
         self.points = []
         while t <= 2 * np.pi:
-            x = 500 * np.cos(t - np.pi/2) + frames_x / 2
-            y = 250 * np.sin(2*t - np.pi) + frames_y / 2
+            x = 500 * np.cos(-t + np.pi/2) + frames_x / 2
+            y = 250 * np.sin(-2 * t + np.pi) + frames_y / 2
             self.points.append([x, y])
             t += 0.005 * np.pi
 
