@@ -49,12 +49,13 @@ class Driver:
 
     def move(self):
         dx = np.cos(self.angle) * self.speed
-        dy = np.sin(self.angle) * self.speed
+        dy = np.sin(self.angle) * self.speed 
 
-        if self.speed > self.max_speed * 0.8:
+        # drifting
+        if self.speed > self.max_speed * 0.75:
             self.angle += self.steering / 10
-            dx += np.cos(self.angle - self.steering) * self.speed / self.max_speed
-            dy += np.sin(self.angle - self.steering) * self.speed / self.max_speed
+            dx += np.cos(self.angle - self.steering) * (self.speed / self.max_speed) / 5
+            dy += np.sin(self.angle - self.steering) * (self.speed / self.max_speed) / 5
 
         self.x += dx
         self.y += dy
@@ -125,7 +126,14 @@ class Driver:
             angle = np.arctan2(dy, dx)
             sensors.append(distance)
             sensors.append(angle)
+        # self.draw_sensors(sensepoints)
         return np.array(sensors)
+    
+    def draw_sensors(self, sensors):
+        for sensor in sensors:
+            pygame.draw.line(self.game.screen, (255, 255, 255), (self.x, self.y), sensor)
+        
+        pygame.display.update()
 
     def check_collision(self):
         if self.x < 0 or self.x > self.game.frames_x or self.y < 0 or self.y > self.game.frames_y:

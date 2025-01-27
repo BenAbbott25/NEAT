@@ -66,7 +66,8 @@ class Checkpoint:
         self.position = position
         self.angle = angle
         self.angle_derivative = angle_derivative
-        self.width = min(max(angle_derivative, 25), 50) * 1.5
+        # self.width = min(max(angle_derivative, 25), 30) * 2
+        self.width = 30
         self.left_position = (self.position[0] + np.cos(self.angle + np.pi/2)*self.width, self.position[1] + np.sin(self.angle + np.pi/2)*self.width)
         self.right_position = (self.position[0] + np.cos(self.angle - np.pi/2)*self.width, self.position[1] + np.sin(self.angle - np.pi/2)*self.width)
 
